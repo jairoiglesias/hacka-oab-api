@@ -40,7 +40,9 @@ block content
                 })
                 
                 promise.then(function (response) {
-                        
+                    
+                    console.log("============================")
+                    console.log(response)
                     $('#ocr_result').text(response)
 
                 })

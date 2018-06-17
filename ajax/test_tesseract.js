@@ -29,7 +29,7 @@ else if(arg == '--extract-all-files'){
 
 function extractSingleImage(imageFullPath, callback){
 
-    tesseract.process(imageFullPath, function(err, text) {
+    tesseract.process(imageFullPath, options, function(err, text) {
         if(err) {
             console.error(err);
             console.log('Erro ao tentar ler arquivo no Tesseract')

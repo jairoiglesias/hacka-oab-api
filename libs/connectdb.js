@@ -15,7 +15,7 @@ module.exports = function(){
 
             const url = process.env.MONGODB_URI ||'mongodb://heroku_7gq7kskf:h87b2kq3n2oj5ffoin790mrrf3@ds125068.mlab.com:25068/heroku_7gq7kskf'
 
-            const dbName = 'heroku_7gq7kskf'
+            const dbName = 'heroku_7gq7kskf'    
 
             MongoClient.connect(url, function(err, client) {
             
