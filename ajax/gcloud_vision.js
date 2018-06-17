@@ -3,7 +3,7 @@
 
 function gCloudTextOCR(imageFullPath, index, callback){
 
-    process.env.GOOGLE_APPLICATION_CREDENTIALS = 'C:/keys/key_gcloud_vision.json'
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = './keys/key_gcloud_vision.json'
 
     // Imports the Google Cloud client library
     const vision = require('@google-cloud/vision');
