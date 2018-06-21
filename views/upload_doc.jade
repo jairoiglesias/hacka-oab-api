@@ -9,6 +9,8 @@ block content
   
     $(document).ready(function(){
 
+        var lastUUID = ''
+
         $('#frm_upload_doc').submit(function(e){
 
             e.preventDefault()
@@ -50,19 +52,70 @@ block content
             }
 
         })
+
+        $('#frm_process_ocr').submit(function(e){
+
+            e.preventDefault()
+
+            var data = $(this).serialize();
+
+            console.log(data)
+
+            var promise = $.ajax({
+                url: 'process_ocr',
+                type: 'POST',
+                data: data
+            })
+
+            promise.then(function(result){
+                lastUUID = result
+                $('#ocr_result').text(JSON.stringify(result))
+            })
+
+        })
+
+        $('#btn_consultar_status').click(function(e){
+
+            e.preventDefault()
+
+            let _url = 'status_ocr/'+lastUUID._uuid
+
+            var promise = $.ajax({
+                url: _url,
+                type: 'GET'
+            })
+
+            promise.then(function(result){
+                $('#status_ocr').text(JSON.stringify(result))
+            })
+
+        })
       
     })  
 
     
   div(class='container')
-    h2 Upload de documentos (Teste OCR Tesseract)
-    a(class='btn btn-info' href='get_all_files'  target='_blank') Listar Urls dos Textos
+    h2 Modulo de Teste - OCR Google Cloud Vision
+    //- a(class='btn btn-info' href='get_all_files'  target='_blank') Listar Urls dos Textos
     hr
+    h3 Metodo Upload do Computador
     form(method="post" id="frm_upload_doc" enctype="multipart/form-data")
         //- input(class='form-control' type='file' name='file_doc' id='file_doc' accept=".jpg,.jpeg,.png,.tiff")
         input(class='form-control' type='file' name='file_doc' id='file_doc' accept=".pdf")
         br
         input(class='btn btn-success' type='submit' value='enviar' id='btn_enviar')
     hr
-    a(id='url_ocr_atual')
+    h3 Metodo por URL Externa
+    form(method="post" id="frm_process_ocr")
+        input(class="form-control" type="text" id="urlFile" name="urlFile")
+        br
+        input(class='btn btn-success' type='submit' value='enviar' id='btn_enviar_ocr')
+        br
+    //- a(id='url_ocr_atual')
     pre(id='ocr_result')
+    hr
+    h3 Consultar Status OCR (Ultimo UUID)
+    br
+    input(class='btn btn-success' type='button' value='consultar status' id='btn_consultar_status')
+    br
+    pre(id='status_ocr')
