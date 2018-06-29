@@ -684,14 +684,11 @@ module.exports = function(app) {
                 console.log(new Date())
                 console.log("==============================")
 
-                console.log('**********************')
-                console.log(reqWKS)
-                console.log('**********************')
-
                 let reg = {
                   uuid: _uuid,
                   status: 'finish',
-                  created: new Date()
+                  created: new Date(),
+                  ocr: reqWKS
                 }
 
                 db.collection('analise_ocr').insert(reg, (err, records) => {
