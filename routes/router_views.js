@@ -24,9 +24,11 @@ module.exports = function(app) {
     dest: 'uploads/' 
   })
 
-  app.post('/teste_post', (req, res) => {
+  app.post('/teste_post', upload.any(), (req, res) => {
 
     console.log(req.body)
+    console.log('*************************')
+    console.log(req.files)
     console.log('*************************')
 
     res.send('teste')
