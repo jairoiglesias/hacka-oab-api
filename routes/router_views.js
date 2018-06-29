@@ -355,55 +355,6 @@ module.exports = function(app) {
 
     var file = req.files[0].path
 
-    function processaOCRLote(result, index, reqWKS, callback){
-
-      // ### Inicia o procedimento de analise OCR ###
-
-      var ocr = require('./../ajax/test_tesseract.js')
-
-      // console.log(result.message[index])
-      
-      var imagePath = result.message[index].path
-
-      console.log('Iniciando OCR Tesseract da imagem ' + imagePath)
-
-      ocr.extractSingleImage(imagePath, function(ocrData){
-
-        console.log(ocrData)
-
-        var originalnameRawNumber = originalnameRaw+'_' + (index + 1)
-        var newFileNameText = './uploads/'+originalnameRaw+'/'+originalnameRaw+'_' + (index + 1) + '.txt'
-
-        // ocrData = ocrData.replace(String.fromCharCode(10), '').replace(String.fromCharCode(13), '')
-        ocrData = ocrData.replace(/(\r\n|\n|\r)/gm," ");
-        ocrData = ocrData.replace(/\s+/g," ");
-
-        fs.writeFile(newFileNameText, ocrData, function(err){
-
-          if(err) throw err
-
-          console.log('Extração de dados da imagem realizada com sucesso')
-          console.log(index)
-
-          var _ocrData = originalnameRawNumber+' |||| ' + ocrData
-          
-          reqWKS.ocr.push(_ocrData)
-
-          if(index == (result.message.length - 1)){
-            callback()
-          }
-          else{
-            var newIndex = index + 1
-            processaOCRLote(result, newIndex, reqWKS, callback)
-          }
-
-        })
-        
-      })
-
-
-    }
-
     function processaOCRLoteV2(imagePath, reqWKS, callback){
 
       // ### Inicia o procedimento de analise OCR ###
@@ -502,7 +453,7 @@ module.exports = function(app) {
             
             if(ocrIndex == (reqWKS.ocr.length - 1)){
 
-              // res.send('Finalizado com sucesso')
+              res.send('Finalizado com sucesso')
 
             }
 
@@ -513,7 +464,7 @@ module.exports = function(app) {
 
             if(ocrIndex == (reqWKS.ocr.length - 1)){
 
-              // res.send('Finalizado com sucesso')
+              res.send('Finalizado com Erro')
 
             }
 
