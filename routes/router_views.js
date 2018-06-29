@@ -349,6 +349,10 @@ module.exports = function(app) {
       ocr: []
     }
 
+    // Guarda o nome original do arquivo sem extensao
+    var originalname = req.files[0].originalname
+    var originalnameRaw = originalname.split('.')[0]
+
     var file = req.files[0].path
 
     function processaOCRLote(result, index, reqWKS, callback){
