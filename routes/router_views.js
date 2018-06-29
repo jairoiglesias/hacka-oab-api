@@ -420,8 +420,8 @@ module.exports = function(app) {
 
           console.log(ocrData)
 
-          var originalnameRawNumber = originalnameRaw+'_' + (index + 1)
-          var newFileNameText = './uploads/'+originalnameRaw+'/'+originalnameRaw+'_' + (index + 1) + '.txt'
+          // var originalnameRawNumber = originalnameRaw+'_' + (index + 1)
+          var newFileNameText = './uploads/'+originalnameRaw+'_' + (index + 1) + '.txt'
 
           // ocrData = ocrData.replace(String.fromCharCode(10), '').replace(String.fromCharCode(13), '')
           ocrData = ocrData.replace(/(\r\n|\n|\r)/gm," ");
