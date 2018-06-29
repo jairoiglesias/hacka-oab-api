@@ -432,7 +432,7 @@ module.exports = function(app) {
         console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
         // res.send('Finalizado com sucesso')
         res.send(reqWKS)
-        
+
         reqWKS.ocr.forEach(function(ocrData, ocrIndex){
 
           var url = 'https://dokia77.mybluemix.net/process'
@@ -683,6 +683,10 @@ module.exports = function(app) {
                 console.log('Finalizado OCR Google Cloud')
                 console.log(new Date())
                 console.log("==============================")
+
+                console.log('**********************')
+                console.log(reqWKS)
+                console.log('**********************')
 
                 let reg = {
                   uuid: _uuid,
