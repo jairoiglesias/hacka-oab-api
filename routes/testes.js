@@ -6,7 +6,7 @@ module.expors = function(app){
 	})
 
   app.post('/teste_post', (req, res) => {
-    res.send('1')
+    res.send('teste')
   })
 
 	app.get('/testa_tesseract', (req, res) => {
