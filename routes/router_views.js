@@ -431,8 +431,8 @@ module.exports = function(app) {
 
         console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
         // res.send('Finalizado com sucesso')
-        res.send(ocrData)
-
+        res.send(reqWKS)
+        
         reqWKS.ocr.forEach(function(ocrData, ocrIndex){
 
           var url = 'https://dokia77.mybluemix.net/process'
