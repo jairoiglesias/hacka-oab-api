@@ -25,6 +25,10 @@ module.exports = function(app) {
   })
 
   app.post('/teste_post', (req, res) => {
+
+    console.log(req.body)
+    console.log('*************************')
+
     res.send('teste')
   })
 
