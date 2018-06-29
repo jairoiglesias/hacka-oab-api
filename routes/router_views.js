@@ -1,5 +1,4 @@
 
-var hashId = ''
 var fileNameUpload = ''
 var dadosFront = ''
 var dadosNLU = []
@@ -23,10 +22,6 @@ module.exports = function(app) {
 
   var upload = multer({
     dest: 'uploads/' 
-  })
-
-  app.get('/', (req, res) => {
-    res.send('Tesseract NodeJs Started !!!')
   })
 
   app.get('/upload_doc', (req, res) => {
@@ -61,21 +56,6 @@ module.exports = function(app) {
 
     fs.readdir('./ajax/output', (err, items) => {
       res.send(items)
-    })
-
-  })
-
-  app.get('/testa_tesseract', (req, res) => {
-
-    var ocr = require('./../ajax/test_tesseract.js')
-
-    var imageFullPath = 'public/images_ocr/avaliaca_judicial_02.tiff'
-    
-    ocr.extractSingleImage(imageFullPath, function(result){
-        
-        console.log(result)
-        res.send(result)
-        
     })
 
   })
@@ -708,16 +688,6 @@ module.exports = function(app) {
     // res.download(req.path)
     console.log(req.path)
     console.log(dir, file)
-
-  })
-
-  app.get('/test_pdf2pic', (req, res) => {
-
-    var m_pdf2pic = require('./../ajax/pdf2img.js')
-
-    m_pdf2pic.convertPdf2Img(function(result){
-      res.send(result)
-    })
 
   })
 
