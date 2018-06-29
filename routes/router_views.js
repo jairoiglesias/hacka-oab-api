@@ -701,7 +701,7 @@ module.exports = function(app) {
 
                 if(reqWKS.ocr.length == 0){
 
-                  res.send('Finalizado com sucesso')
+                  res.send(reqWKS)
 
                 }
                 else{
