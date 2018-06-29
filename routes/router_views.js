@@ -412,7 +412,7 @@ module.exports = function(app) {
         
         console.log('Iniciando OCR Google Cloud da imagem ' + imagePath)
         
-        ocr.gCloudTextOCR(imagePath, index, function(index, ocrData){
+        ocr.gCloudTextOCR(imagePath, 0, function(index, ocrData){
 
           console.log(ocrData)
 
