@@ -5,10 +5,6 @@ module.expors = function(app){
 		res.send('Tesseract NodeJs Started !!!')
 	})
 
-  app.post('/teste_post', (req, res) => {
-    res.send('teste')
-  })
-
 	app.get('/testa_tesseract', (req, res) => {
 
     var ocr = require('./../ajax/test_tesseract.js')

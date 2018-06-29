@@ -24,6 +24,10 @@ module.exports = function(app) {
     dest: 'uploads/' 
   })
 
+  app.post('/teste_post', (req, res) => {
+    res.send('teste')
+  })
+
   app.get('/upload_doc', (req, res) => {
     res.render('upload_doc')
   })
