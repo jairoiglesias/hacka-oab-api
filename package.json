@@ -6,8 +6,10 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
+    "@cloudant/cloudant": "^2.3.0",
     "@google-cloud/vision": "^0.20.0",
     "aws-sdk": "^2.188.0",
+    "axios": "^0.18.0",
     "body-parser": "~1.15.2",
     "cookie-parser": "~1.4.3",
     "debug": "~2.2.0",

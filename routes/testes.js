@@ -1,5 +1,5 @@
 
-module.expors = function(app){
+module.exports = function(app){
 
 	app.get('/', (req, res) => {
 		res.send('Tesseract NodeJs Started !!!')

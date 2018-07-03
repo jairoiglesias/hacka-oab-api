@@ -1,10 +1,6 @@
 const Cloudant = require('@cloudant/cloudant');
-const {
-  post
-} = require('axios')
-const { 
-  promisify
-} = require('util')
+const { post } = require('axios')
+const { promisify } = require('util')
 
 const VALIDATOR_URL = 'https://validator-dokia.mybluemix.net/api/validator'
 const ID_RULE = "90ad561435df4489b29e9fa8b4540315"
@@ -150,40 +146,60 @@ const cloudant = Cloudant({
   "host": "96ba32ad-e17d-494f-a93e-72240b1e0b16-bluemix.cloudant.com",
   "port": 443,
   "url": "https://96ba32ad-e17d-494f-a93e-72240b1e0b16-bluemix:e373c010bcb53c3ea89a59f7fa2642789e7bfe3128bab1c3e2762b713ab04641@96ba32ad-e17d-494f-a93e-72240b1e0b16-bluemix.cloudant.com"
-});
+})
 
+function processRuleValidator(wksResponse){
 
-(async () => {
-  const dokia = cloudant.db.use('dokia-validator')
-  const resultView = await promisify(dokia.view)('field', 'field-view')
-  const entities = MOCK_WKS_RESPONSE.entities
+  return new Promise((resolve, reject) => {
 
-  const result = resultView.rows
-    .map(({
-      value
-    }) => {
-      const [dbItem] = entities.filter(({
-        type
-      }) => type === value.title)
-      if (!dbItem) return null;
+    const dokia = cloudant.db.use('dokia-validator')
+    
+    promisify(dokia.view)('field', 'field-view').then((resultView)=>{
 
-      const text = dbItem.text;
-      return {
-        idField: value._id,
-        value: text
+      const entities = wksResponse.entities
+
+      if(entities == undefined) {
+        console.log('Nao existem entidades para validacao de regra')
+        resolve()
+        return
       }
+
+      const result = resultView.rows.map(({value}) => {
+          const [dbItem] = entities.filter(({
+            type
+          }) => type === value.title)
+          if (!dbItem) return null;
+
+          const text = dbItem.text;
+          return {
+            idField: value._id,
+            value: text
+          }
+        })
+        .filter(item => !!item)
+
+      const data = {
+        idRule: ID_RULE,
+        inputs: result
+      }
+      
+      post(VALIDATOR_URL, data).then((response)=>{
+        console.log('response', response.data)
+        // return response;
+        resolve(response.data)
+
+      }).catch((error)=>{
+        
+        console.log('Erro na requisicao da validacao de regras')
+        resolve()
+      })
+
     })
-    .filter(item => !!item)
-  const data = {
-    idRule: ID_RULE,
-    inputs: result
-  }
-  try {
-    const response = await post(VALIDATOR_URL, data)
-    console.log('response', response.data)
-    return response;
-  } catch (error) {
-    console.error(`error on POST to ${VALIDATOR_URL}, data: ${JSON.stringify(data)}`)
-    return;
-  }
-})()
+
+  })
+
+}
+
+module.exports = {
+  processRuleValidator
+}

@@ -1,11 +1,24 @@
 
-var fileNameUpload = ''
-var dadosFront = ''
-var dadosNLU = []
-var dadosAnalise = []
+let fileNameUpload = ''
+let dadosFront = ''
+let dadosNLU = []
+let dadosAnalise = []
 
-var m_connectDb = require('./../libs/connectdb')
-var db = ''
+// Array contendo a definicao de cada pagina do PDF
+let pagesDoc = [
+  {pageIndex: 1, name: 'Petição'},
+  {pageIndex: 2, name: 'Guia'},
+  {pageIndex: 3, name: 'Guia'},
+  {pageIndex: 4, name: 'Comprovante'},
+  {pageIndex: 5, name: 'Determinação Judicial'},
+  {pageIndex: 6, name: 'Print TJ'},
+  {pageIndex: 7, name: 'Correio'}
+]
+
+let m_ruleValidator = require('./../ajax/ruleValidator')
+
+let m_connectDb = require('./../libs/connectdb')
+let db = ''
 
 m_connectDb().then(function(dbInstance){
   db = dbInstance
@@ -515,6 +528,7 @@ module.exports = function(app) {
 
       writeStream.on('finish', () => {
 
+        // Devolve o UUID para o cliente
         res.send({_uuid})
         
         dadosFront = req.body.docSend
@@ -553,7 +567,6 @@ module.exports = function(app) {
 
             console.log(newFileNameImage)
           
-
             m_pdf2img.convertPdf2Img(newFileNameImage, (result) => {
 
               console.log('Finalizado extracao de imagens do PDF')
@@ -609,6 +622,7 @@ module.exports = function(app) {
 
               }
 
+              // Versão com Google Cloud Vision
               function processaOCRLoteV2(result, reqWKS, callback){
 
                 // ### Inicia o procedimento de analise OCR ###
@@ -624,15 +638,15 @@ module.exports = function(app) {
                   var promise = new Promise((resolve, reject) => {
 
                     var imagePath = result.message[index].path
+                    var pageIndex = result.message[index].page
                     
                     console.log('Iniciando OCR Google Cloud da imagem ' + imagePath)
+                    console.log('Page Index: '+pageIndex)
                     
-                    ocr.gCloudTextOCR(imagePath, index, function(index, ocrData){
+                    ocr.gCloudTextOCR(imagePath, pageIndex, function(resPageIndex, ocrData){
 
-                      console.log(ocrData)
-
-                      var originalnameRawNumber = originalnameRaw+'_' + (index + 1)
-                      var newFileNameText = './uploads/'+originalnameRaw+'/'+originalnameRaw+'_' + (index + 1) + '.txt'
+                      var originalnameRawNumber = originalnameRaw+'_' + (resPageIndex + 1)
+                      var newFileNameText = './uploads/'+originalnameRaw+'/'+originalnameRaw+'_' + (resPageIndex + 1) + '.txt'
 
                       // ocrData = ocrData.replace(String.fromCharCode(10), '').replace(String.fromCharCode(13), '')
                       ocrData = ocrData.replace(/(\r\n|\n|\r)/gm," ");
@@ -647,11 +661,18 @@ module.exports = function(app) {
                         if(err) throw err
 
                         console.log('Extração de dados da imagem realizada com sucesso')
-                        console.log(index)
+                        console.log(resPageIndex)
 
                         var _ocrData = originalnameRawNumber+' |||| ' + ocrData
+
+                        let ocrReg = {
+                          resPageIndex,
+                          ocrData
+                        }
+
+                        console.log(ocrReg)
                         
-                        reqWKS.ocr.push(_ocrData)
+                        reqWKS.ocr.push(ocrReg)
 
                         resolve()
 
@@ -684,18 +705,6 @@ module.exports = function(app) {
                 console.log(new Date())
                 console.log("==============================")
 
-                let reg = {
-                  uuid: _uuid,
-                  status: 'finish',
-                  created: new Date(),
-                  ocr: reqWKS
-                }
-
-                db.collection('analise_ocr').insert(reg, (err, records) => {
-                  if(err) throw err
-                  console.log('Registro inserido no MongoDb')
-                })
-
                 if(reqWKS.ocr.length == 0){
 
                   res.send(reqWKS)
@@ -705,30 +714,50 @@ module.exports = function(app) {
 
                   console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
 
-                  reqWKS.ocr.forEach(function(ocrData, ocrIndex){
+                  function processWKS(ocr, index, cb){
 
-                    var url = 'https://dokia77.mybluemix.net/process'
+                    ocrData = ocr[index]
+
+                    // Recupera a definicao da pagina
+                    var pageDocCur = pagesDoc.filter((page)=>{
+                      return page.pageIndex == ocrData.resPageIndex
+                    })
+
+                    // Define dados para POST
+                    let postData = {
+                      pageIndex: pageDocCur[0].pageIndex,
+                      pageName: pageDocCur[0].name,
+                      ocrData: ocrData.ocrData
+                    }
+
+                    var urlWKS = 'https://node-red-dokia.mybluemix.net/classifica'
 
                     var requestOptions = {
                       method: 'POST',
                       resolveWithFullResponse: true,
-                      uri: url,
+                      uri: urlWKS,
                       json: true,
-                      body: {
-                        "texto": ocrData
-                      }
+                      body: postData
                     }
 
                     rp(requestOptions).then(function(response){
 
-                      console.log('OCR index: ' + ocrIndex + ' => Requisicao a EndPoint enviado com sucesso!')
+                      console.log(pageDocCur[0].pageIndex)
+                      console.log(pageDocCur[0].name)
+                      console.log('-----------------------------------')
+                      console.log('OCR index: ' + ocrData.resPageIndex + ' => Requisicao a EndPoint enviado com sucesso!')
+                      console.log(ocrData)
                       console.log(response.body)
                       console.log("===================================")
+
+                      ocr[index].name = pageDocCur[0].name
+                      ocr[index].wks = response.body
                       
-                      if(ocrIndex == (reqWKS.ocr.length - 1)){
-
-                        // res.send('Finalizado com sucesso')
-
+                      if(ocr.length == (index+1)){
+                        cb()
+                      }
+                      else{
+                        processWKS(ocr, (index+1), cb)
                       }
 
                     }).catch(function(err){
@@ -736,15 +765,68 @@ module.exports = function(app) {
                       console.log('Erro EndPoint Handled !')
                       console.log(err.error)
 
-                      if(ocrIndex == (reqWKS.ocr.length - 1)){
-
-                        // res.send('Finalizado com sucesso')
-
+                      if(ocr.length == (index+1)){
+                        cb()
+                      }
+                      else{
+                        processWKS(ocr, (index+1), cb)
                       }
 
                     })
 
+                  }
+
+                  processWKS(reqWKS.ocr, 0, () => {
+
+                    console.log('Processamento WKS finalizado')
+                    console.log("*******************************")
+                    // console.log(JSON.stringify(reqWKS))
+
+                    console.log('Iniciando validação de regras')
+                    
+                    let promises = []
+
+                    reqWKS.ocr.forEach((value, index) => {
+
+                      let promise = new Promise((resolve, reject) => {
+
+                        wksData = value.wks
+
+                        m_ruleValidator.processRuleValidator(wksData)
+                        .then((validation)=>{
+                          reqWKS.ocr[index].validation = validation
+                          resolve()
+                        })
+
+                      })
+
+                      promises.push(promise)
+
+                    })
+
+                    Promise.all(promises).then(() => {
+
+                      console.log('Validação de regras finalizada!')
+
+                      // Salva os dados no MongoDb
+                      let reg = {
+                        uuid: _uuid,
+                        status: 'finish',
+                        created: new Date(),
+                        ocr: reqWKS
+                      }
+
+                      db.collection('analise_ocr').insert(reg, (err, records) => {
+                        if(err) throw err
+                        console.log('Registro inserido no MongoDb')
+                      })
+
+
+                    })
+
+                    
                   })
+
 
                 }
 
@@ -760,10 +842,7 @@ module.exports = function(app) {
 
       writeStream.end()
 
-
     })
-
-    
     
   })
 
