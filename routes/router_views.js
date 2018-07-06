@@ -1,4 +1,11 @@
 
+var multer = require('multer')
+var uuid = require('uuid')
+var fs = require('fs')
+var path = require('path')
+var url = require('url')
+var rp = require('request-promise').defaults({simple : false})
+
 let fileNameUpload = ''
 let dadosFront = ''
 let dadosNLU = []
@@ -24,14 +31,212 @@ m_connectDb().then(function(dbInstance){
   db = dbInstance
 })
 
-module.exports = function(app) {
+// Efetua o processamento de OCR um a um no WKS
+function processWKS(ocr, index, cb){
 
-  var multer = require('multer')
-  var uuid = require('uuid')
-  var fs = require('fs')
-  var path = require('path')
-  var url = require('url')
-  var rp = require('request-promise').defaults({simple : false})
+  ocrData = ocr[index]
+
+  // Recupera a definicao da pagina
+  var pageDocCur = pagesDoc.filter((page)=>{
+    return page.pageIndex == ocrData.resPageIndex
+  })
+
+  // Define dados para POST
+  let postData = {
+    pageIndex: pageDocCur[0].pageIndex,
+    pageName: pageDocCur[0].name,
+    ocrData: ocrData.ocrData
+  }
+
+  var urlWKS = 'https://node-red-dokia.mybluemix.net/classifica'
+
+  var requestOptions = {
+    method: 'POST',
+    resolveWithFullResponse: true,
+    uri: urlWKS,
+    json: true,
+    body: postData
+  }
+
+  rp(requestOptions).then(function(response){
+
+    console.log(pageDocCur[0].pageIndex)
+    console.log(pageDocCur[0].name)
+    console.log('-----------------------------------')
+    console.log('OCR index: ' + ocrData.resPageIndex + ' => Requisicao a EndPoint enviado com sucesso!')
+    console.log(ocrData)
+    console.log(response.body)
+    console.log("===================================")
+
+    ocr[index].name = pageDocCur[0].name
+    ocr[index].wks = response.body
+    
+    if(ocr.length == (index+1)){
+      cb()
+    }
+    else{
+      processWKS(ocr, (index+1), cb)
+    }
+
+  }).catch(function(err){
+
+    console.log('Erro EndPoint Handled !')
+    console.log(err.error)
+
+    if(ocr.length == (index+1)){
+      cb()
+    }
+    else{
+      processWKS(ocr, (index+1), cb)
+    }
+
+  })
+
+}
+
+// Efetua o processamento assincrono no WKS de cada OCR
+function processWKSv2(ocr, cb){
+
+  let promises = []
+
+  ocr.forEach((ocrData, ocrIndex) => {
+
+    let promise = new Promise((resolve, reject) => {
+
+      // Recupera a definicao da pagina
+      var pageDocCur = pagesDoc.filter((page)=>{
+        return page.pageIndex == ocrData.resPageIndex
+      })
+
+      // Define dados para POST
+      let postData = {
+        pageIndex: pageDocCur[0].pageIndex,
+        pageName: pageDocCur[0].name,
+        ocrData: ocrData.ocrData
+      }
+
+      let urlWKS = 'https://node-red-dokia.mybluemix.net/classifica'
+
+      let requestOptions = {
+        method: 'POST',
+        resolveWithFullResponse: true,
+        uri: urlWKS,
+        json: true,
+        body: postData
+      }
+
+      rp(requestOptions).then(function(response){
+
+        console.log(pageDocCur[0].pageIndex)
+        console.log(pageDocCur[0].name)
+        console.log('-----------------------------------')
+        console.log('OCR index: ' + ocrData.resPageIndex + ' => Requisicao a EndPoint enviado com sucesso!')
+        console.log(ocrData)
+        console.log(response.body)
+        console.log("===================================")
+
+        ocr[index].name = pageDocCur[0].name
+        ocr[index].wks = response.body
+
+        resolve()
+
+      }).catch(function(err){
+
+        console.log('Erro EndPoint Handled !')
+        console.log(err.error)
+
+        resolve()
+
+      })
+
+
+    })
+
+    promise.push(promise)
+
+  })
+
+  Promise.all(promises).then(() => {
+
+    console.log('Processamento WKS v2 Finalizado')
+    cb()
+
+  })
+
+
+}
+
+// Efetua o processamento de WKS enviando todo os OCR em um unico Array
+function processWKSv3(ocr, cb){
+
+  console.log(typeof ocr)
+
+  let ocrDataFull = []
+
+  ocr.forEach((ocrData, ocrIndex) => {
+
+    // Recupera a definicao da pagina
+    var pageDocCur = pagesDoc.filter((page)=>{
+      return page.pageIndex == ocrData.resPageIndex
+    })
+
+    // Define dados para POST
+    let postData = {
+      pageIndex: pageDocCur[0].pageIndex,
+      pageName: pageDocCur[0].name,
+      ocrData: ocrData.ocrData
+    }
+
+    ocrDataFull.push(postData)
+
+  })
+
+  let urlWKS = 'https://node-red-dokia.mybluemix.net/classifica/v2'
+
+  let requestOptions = {
+    method: 'POST',
+    resolveWithFullResponse: true,
+    uri: urlWKS,
+    json: true,
+    body: ocrDataFull
+  }
+
+  console.log('['+arguments.callee.name+'] Processando ...')
+
+  rp(requestOptions).then(function(wksResponse){
+
+    // console.log(JSON.stringify(wksResponse.body))
+    // console.log("@===================================@")
+    // process.exit()
+
+    let result = wksResponse.body
+
+    ocr.map(function(ocrData) {
+      
+      var wksCur = result.filter((page)=>{
+        return page.pageIndex == ocrData.resPageIndex
+      })
+
+      ocrData.wks = wksCur[0].NLU
+
+      return ocrData
+
+    })
+
+    cb()
+
+  }).catch(function(err){
+
+    console.log('Erro EndPoint Handled !')
+    console.log(err.error)
+
+    cb()
+
+  })
+
+}
+
+module.exports = function(app) {
 
   var upload = multer({
     dest: 'uploads/' 
@@ -714,73 +919,11 @@ module.exports = function(app) {
 
                   console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
 
-                  function processWKS(ocr, index, cb){
-
-                    ocrData = ocr[index]
-
-                    // Recupera a definicao da pagina
-                    var pageDocCur = pagesDoc.filter((page)=>{
-                      return page.pageIndex == ocrData.resPageIndex
-                    })
-
-                    // Define dados para POST
-                    let postData = {
-                      pageIndex: pageDocCur[0].pageIndex,
-                      pageName: pageDocCur[0].name,
-                      ocrData: ocrData.ocrData
-                    }
-
-                    var urlWKS = 'https://node-red-dokia.mybluemix.net/classifica'
-
-                    var requestOptions = {
-                      method: 'POST',
-                      resolveWithFullResponse: true,
-                      uri: urlWKS,
-                      json: true,
-                      body: postData
-                    }
-
-                    rp(requestOptions).then(function(response){
-
-                      console.log(pageDocCur[0].pageIndex)
-                      console.log(pageDocCur[0].name)
-                      console.log('-----------------------------------')
-                      console.log('OCR index: ' + ocrData.resPageIndex + ' => Requisicao a EndPoint enviado com sucesso!')
-                      console.log(ocrData)
-                      console.log(response.body)
-                      console.log("===================================")
-
-                      ocr[index].name = pageDocCur[0].name
-                      ocr[index].wks = response.body
-                      
-                      if(ocr.length == (index+1)){
-                        cb()
-                      }
-                      else{
-                        processWKS(ocr, (index+1), cb)
-                      }
-
-                    }).catch(function(err){
-
-                      console.log('Erro EndPoint Handled !')
-                      console.log(err.error)
-
-                      if(ocr.length == (index+1)){
-                        cb()
-                      }
-                      else{
-                        processWKS(ocr, (index+1), cb)
-                      }
-
-                    })
-
-                  }
-
-                  processWKS(reqWKS.ocr, 0, () => {
+                  // processWKS(reqWKS.ocr, 0, () => {
+                  processWKSv3(reqWKS.ocr, () => {
 
                     console.log('Processamento WKS finalizado')
                     console.log("*******************************")
-                    // console.log(JSON.stringify(reqWKS))
 
                     console.log('Iniciando validação de regras')
                     
@@ -791,7 +934,7 @@ module.exports = function(app) {
                       let promise = new Promise((resolve, reject) => {
 
                         wksData = value.wks
-
+                        
                         m_ruleValidator.processRuleValidator(wksData)
                         .then((validation)=>{
                           reqWKS.ocr[index].validation = validation

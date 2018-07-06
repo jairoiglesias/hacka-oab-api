@@ -1,36 +1,4 @@
 
-// TESTE 01
-
-// let PDF2Pic = require('pdf2pic')
-// let converter = new PDF2Pic({
-//     density: 500,               // output pixels per inch
-//     savename: "teste",          // output file name
-//     savedir: "./ajax/",         // output file location
-//     format: "png",              // output file format
-//     size: 2000                  // output size in pixels
-// })
-
-// function convertPdf2Img(callback){
-    
-//     // fuck it, we can also convert all pages to pdf by
-//     // supplying -1 as second argument
-
-//     converter.convertBulk("./ajax/test.pdf", -1).then(resolve => {
-        
-//         console.log("image converted successfully")
-//         callback(resolve)
-
-//     })
-// }
-
-// // convertPdf2Img(function(resolve){
-
-// //     console.log(resolve)
-
-// // })
-
-
-// TESTE 2
 
 var fs      = require('fs');
 var path    = require('path');

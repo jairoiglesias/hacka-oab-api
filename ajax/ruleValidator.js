@@ -153,8 +153,16 @@ function processRuleValidator(wksResponse){
   return new Promise((resolve, reject) => {
 
     const dokia = cloudant.db.use('dokia-validator')
+
+    console.log('['+arguments.callee.name+'] Processando ...')
     
     promisify(dokia.view)('field', 'field-view').then((resultView)=>{
+
+      if(wksResponse == undefined) {
+        console.log('Nao existem entidades para validacao de regra')
+        resolve()
+        return
+      }
 
       const entities = wksResponse.entities
 

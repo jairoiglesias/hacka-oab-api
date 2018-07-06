@@ -4,7 +4,7 @@ module.exports = function(app){
 	app.get('/', (req, res) => {
 		res.send('Tesseract NodeJs Started !!!')
 	})
-
+  
 	app.get('/testa_tesseract', (req, res) => {
 
     var ocr = require('./../ajax/test_tesseract.js')
