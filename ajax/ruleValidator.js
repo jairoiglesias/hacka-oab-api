@@ -164,42 +164,71 @@ function processRuleValidator(wksResponse){
         return
       }
 
-      const entities = wksResponse.entities
+      // const entities = wksResponse.entities
 
-      if(entities == undefined) {
-        console.log('Nao existem entidades para validacao de regra')
-        resolve()
-        return
-      }
+      // if(entities == undefined) {
+      //   console.log('Nao existem entidades para validacao de regra')
+      //   resolve()
+      //   return
+      // }
+
+      let inputs = []
 
       const result = resultView.rows.map(({value}) => {
-          const [dbItem] = entities.filter(({
-            type
-          }) => type === value.title)
-          if (!dbItem) return null;
 
-          const text = dbItem.text;
-          return {
-            idField: value._id,
-            value: text
+        wksResponse.forEach((wksData, wksIndex) => {
+
+          let entities = wksData.entities
+
+          if(entities){
+
+            const [dbItem] = entities.filter(({type}) => type === value.title)
+            
+            if (!dbItem) return null;
+
+            const text = dbItem.text;
+            
+            // return {
+            //   idField: value._id,
+            //   value: text
+            // }
+
+            inputs.push({
+              idField: value._id,
+              value: text
+            })
+
           }
+
         })
-        .filter(item => !!item)
+
+      })
+      
+      // .filter(item => !!item)
+
+      // console.log(inputs)
+      // console.log('****************')
+      // process.exit()
 
       const data = {
         idRule: ID_RULE,
-        inputs: result
+        inputs: inputs
       }
       
       post(VALIDATOR_URL, data).then((response)=>{
-        console.log('response', response.data)
+        
+        console.log('response ruleValidator')
+        console.log(response.data)
+
         // return response;
         resolve(response.data)
 
       }).catch((error)=>{
         
         console.log('Erro na requisicao da validacao de regras')
+        console.log(error)
         resolve()
+
       })
 
     })

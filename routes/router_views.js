@@ -927,27 +927,17 @@ module.exports = function(app) {
 
                     console.log('Iniciando validação de regras')
                     
-                    let promises = []
+                    let arrayWKS = []
 
                     reqWKS.ocr.forEach((value, index) => {
 
-                      let promise = new Promise((resolve, reject) => {
-
-                        wksData = value.wks
-                        
-                        m_ruleValidator.processRuleValidator(wksData)
-                        .then((validation)=>{
-                          reqWKS.ocr[index].validation = validation
-                          resolve()
-                        })
-
-                      })
-
-                      promises.push(promise)
+                      arrayWKS.push(value.wks)
 
                     })
 
-                    Promise.all(promises).then(() => {
+                    m_ruleValidator.processRuleValidator(arrayWKS).then((validation)=>{
+
+                      reqWKS.validation = validation
 
                       console.log('Validação de regras finalizada!')
 
