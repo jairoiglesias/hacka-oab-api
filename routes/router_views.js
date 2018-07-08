@@ -988,6 +988,7 @@ module.exports = function(app) {
     fs.readFile(imagemPath, function(err, data) {
 
       if(err){
+        res.set('CatossiHub', 'PauNoCuDeQuemLeu heuehueheu')
         res.send(err)
       }
       else{
