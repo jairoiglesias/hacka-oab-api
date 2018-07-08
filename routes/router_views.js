@@ -31,6 +31,128 @@ m_connectDb().then(function(dbInstance){
   db = dbInstance
 })
 
+function processaOCRLote(result, index, reqWKS, callback){
+
+  // ### Inicia o procedimento de analise OCR ###
+
+  var ocr = require('./../ajax/test_tesseract.js')
+
+  // console.log(result.message[index])
+  
+  var imagePath = result.message[index].path
+
+  console.log('Iniciando OCR Tesseract da imagem ' + imagePath)
+
+  ocr.extractSingleImage(imagePath, function(ocrData){
+
+    console.log(ocrData)
+
+    var originalnameRawNumber = originalnameRaw+'_' + (index + 1)
+    var newFileNameText = './uploads/'+originalnameRaw+'/'+originalnameRaw+'_' + (index + 1) + '.txt'
+
+    // ocrData = ocrData.replace(String.fromCharCode(10), '').replace(String.fromCharCode(13), '')
+    ocrData = ocrData.replace(/(\r\n|\n|\r)/gm," ");
+    ocrData = ocrData.replace(/\s+/g," ");
+
+    fs.writeFile(newFileNameText, ocrData, function(err){
+
+      if(err) throw err
+
+      console.log('Extração de dados da imagem realizada com sucesso')
+      console.log(index)
+
+      var _ocrData = originalnameRawNumber+' |||| ' + ocrData
+      
+      reqWKS.ocr.push(_ocrData)
+
+      if(index == (result.message.length - 1)){
+        callback()
+      }
+      else{
+        var newIndex = index + 1
+        processaOCRLote(result, newIndex, reqWKS, callback)
+      }
+
+    })
+    
+  })
+
+
+}
+
+// Versão com Google Cloud Vision
+function processaOCRLoteV2(result, reqWKS, originalnameRaw, callback){
+
+  // ### Inicia o procedimento de analise OCR ###
+
+  var ocr = require('./../ajax/gcloud_vision.js')
+
+  let totalImagens = result.message.length
+
+  const promises = []
+
+  for(var index = 0; index < totalImagens; index++){
+
+    var promise = new Promise((resolve, reject) => {
+
+      var imagePath = result.message[index].path
+      var pageIndex = result.message[index].page
+      
+      console.log('Iniciando OCR Google Cloud da imagem ' + imagePath)
+      console.log('Page Index: '+pageIndex)
+      
+      ocr.gCloudTextOCR(imagePath, pageIndex, function(resPageIndex, ocrData){
+
+        var newFileNameText = './uploads/'+originalnameRaw+'/page_' + (resPageIndex) + '.txt'
+
+        // ocrData = ocrData.replace(String.fromCharCode(10), '').replace(String.fromCharCode(13), '')
+        ocrData = ocrData.replace(/(\r\n|\n|\r)/gm," ");
+        ocrData = ocrData.replace(/\s+/g," ");
+
+        console.log("Salvando OCR em arquivo ...")
+        console.log(newFileNameText)
+        console.log("---------------------------------------------------")
+
+        fs.writeFile(newFileNameText, ocrData, function(err){
+
+          if(err) throw err
+
+          console.log('Extração de dados da imagem realizada com sucesso')
+          console.log(resPageIndex)
+
+          let ocrReg = {
+            resPageIndex,
+            ocrData
+          }
+
+          console.log(ocrReg)
+          
+          reqWKS.ocr.push(ocrReg)
+
+          resolve()
+
+        })
+
+        
+      })
+
+    })
+    
+    promises.push(promise)
+
+  }
+
+  Promise.all(promises).then(() => {
+
+    console.log("=============================================")
+    console.log("All Promises finished!")
+    console.log("=============================================")
+    callback()
+    
+  })
+
+}
+
 // Efetua o processamento de OCR um a um no WKS
 function processWKS(ocr, index, cb){
 
@@ -747,8 +869,8 @@ module.exports = function(app) {
         var originalname = path.parse(outputFilePath).base
         var originalnameRaw = originalname.split('.')[0]
 
-        var newFileNameImage = './uploads/'+originalnameRaw+'/'+originalname
-        var newFolderName = './uploads/'+originalnameRaw
+        var newFileNamePDF = './uploads/'+_uuid+'/'+originalname
+        var newFolderName = './uploads/'+_uuid
 
         // Cria o diretorio para guardar o PDF
         fs.mkdir(newFolderName, (err) => {
@@ -758,7 +880,7 @@ module.exports = function(app) {
           console.log('dir created')
           
           // Renomeia o arquivo para o novo diretorio
-          fs.rename(outputFilePath, newFileNameImage,  (err) => {
+          fs.rename(outputFilePath, newFileNamePDF,  (err) => {
             
             if (err) throw err;
             
@@ -769,144 +891,18 @@ module.exports = function(app) {
             var m_pdf2img = require('./../ajax/pdf2img.js')
 
             console.log('Iniciando a conversão do PDF para imagens')
-
-            console.log(newFileNameImage)
+            console.log(newFileNamePDF)
           
-            m_pdf2img.convertPdf2Img(newFileNameImage, (result) => {
+            m_pdf2img.convertPdf2ImgV2(newFileNamePDF, newFolderName, (result) => {
 
               console.log('Finalizado extracao de imagens do PDF')
               console.log(new Date())
               console.log("==============================")
 
-              function processaOCRLote(result, index, reqWKS, callback){
-
-                // ### Inicia o procedimento de analise OCR ###
-
-                var ocr = require('./../ajax/test_tesseract.js')
-
-                // console.log(result.message[index])
-                
-                var imagePath = result.message[index].path
-
-                console.log('Iniciando OCR Tesseract da imagem ' + imagePath)
-
-                ocr.extractSingleImage(imagePath, function(ocrData){
-
-                  console.log(ocrData)
-
-                  var originalnameRawNumber = originalnameRaw+'_' + (index + 1)
-                  var newFileNameText = './uploads/'+originalnameRaw+'/'+originalnameRaw+'_' + (index + 1) + '.txt'
-
-                  // ocrData = ocrData.replace(String.fromCharCode(10), '').replace(String.fromCharCode(13), '')
-                  ocrData = ocrData.replace(/(\r\n|\n|\r)/gm," ");
-                  ocrData = ocrData.replace(/\s+/g," ");
-
-                  fs.writeFile(newFileNameText, ocrData, function(err){
-
-                    if(err) throw err
-
-                    console.log('Extração de dados da imagem realizada com sucesso')
-                    console.log(index)
-
-                    var _ocrData = originalnameRawNumber+' |||| ' + ocrData
-                    
-                    reqWKS.ocr.push(_ocrData)
-
-                    if(index == (result.message.length - 1)){
-                      callback()
-                    }
-                    else{
-                      var newIndex = index + 1
-                      processaOCRLote(result, newIndex, reqWKS, callback)
-                    }
-
-                  })
-                  
-                })
-
-
-              }
-
-              // Versão com Google Cloud Vision
-              function processaOCRLoteV2(result, reqWKS, callback){
-
-                // ### Inicia o procedimento de analise OCR ###
-
-                var ocr = require('./../ajax/gcloud_vision.js')
-
-                let totalImagens = result.message.length
-
-                const promises = []
-
-                for(var index = 0; index < totalImagens; index++){
-
-                  var promise = new Promise((resolve, reject) => {
-
-                    var imagePath = result.message[index].path
-                    var pageIndex = result.message[index].page
-                    
-                    console.log('Iniciando OCR Google Cloud da imagem ' + imagePath)
-                    console.log('Page Index: '+pageIndex)
-                    
-                    ocr.gCloudTextOCR(imagePath, pageIndex, function(resPageIndex, ocrData){
-
-                      var originalnameRawNumber = originalnameRaw+'_' + (resPageIndex + 1)
-                      var newFileNameText = './uploads/'+originalnameRaw+'/'+originalnameRaw+'_' + (resPageIndex + 1) + '.txt'
-
-                      // ocrData = ocrData.replace(String.fromCharCode(10), '').replace(String.fromCharCode(13), '')
-                      ocrData = ocrData.replace(/(\r\n|\n|\r)/gm," ");
-                      ocrData = ocrData.replace(/\s+/g," ");
-
-                      console.log("Salvando OCR em arquivo ...")
-                      console.log(newFileNameText)
-                      console.log("---------------------------------------------------")
-
-                      fs.writeFile(newFileNameText, ocrData, function(err){
-
-                        if(err) throw err
-
-                        console.log('Extração de dados da imagem realizada com sucesso')
-                        console.log(resPageIndex)
-
-                        var _ocrData = originalnameRawNumber+' |||| ' + ocrData
-
-                        let ocrReg = {
-                          resPageIndex,
-                          ocrData
-                        }
-
-                        console.log(ocrReg)
-                        
-                        reqWKS.ocr.push(ocrReg)
-
-                        resolve()
-
-                      })
-
-                      
-                    })
-
-                  })
-                  
-                  promises.push(promise)
-
-                }
-
-                Promise.all(promises).then(() => {
-
-                  console.log("=============================================")
-                  console.log("All Promises finished!")
-                  console.log("=============================================")
-                  callback()
-                  
-                })
-
-              }
-
               // Efetua o processamento OCR das imagens
-              processaOCRLoteV2(result, reqWKS, function(){
+              processaOCRLoteV2(result, reqWKS, _uuid, function(){
 
-                console.log('Finalizado OCR Google Cloud')
+                console.log('Finalizado OCR Google Cloud Vision')
                 console.log(new Date())
                 console.log("==============================")
 
@@ -919,7 +915,6 @@ module.exports = function(app) {
 
                   console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
 
-                  // processWKS(reqWKS.ocr, 0, () => {
                   processWKSv3(reqWKS.ocr, () => {
 
                     console.log('Processamento WKS finalizado')
@@ -977,6 +972,32 @@ module.exports = function(app) {
 
     })
     
+  })
+
+  app.get('/get_image_page/:uuid/:index', (req, res) => {
+
+    var uuid = req.params.uuid
+    var index = req.params.index
+
+    var imagemPath = `./uploads/${uuid}/page_${index}.png`
+
+    console.log('Recuperando imagem ...')
+    console.log(imagemPath)
+
+    // Efetua leitura da imagem
+    fs.readFile(imagemPath, function(err, data) {
+
+      if(err){
+        res.send(err)
+      }
+      else{
+        // Configura o retorno do content
+        res.set('Content-Type', 'image/png')
+        res.send(data)
+      }
+      
+    })
+
   })
 
   app.get('/status_ocr/:uuid', (req, res) => {
