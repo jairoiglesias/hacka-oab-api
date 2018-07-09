@@ -22,7 +22,7 @@ let pagesDoc = [
   {pageIndex: 7, name: 'Correio'}
 ]
 
-let m_ruleValidator = require('./../ajax/ruleValidator')
+let m_ruleValidator = require('./../ajax/rule_validator')
 
 let m_connectDb = require('./../libs/connectdb')
 let db = ''
@@ -297,19 +297,22 @@ function processWKSv3(ocr, cb){
 
   ocr.forEach((ocrData, ocrIndex) => {
 
-    // Recupera a definicao da pagina
-    var pageDocCur = pagesDoc.filter((page)=>{
-      return page.pageIndex == ocrData.resPageIndex
-    })
+    if(ocrData.ocrData.length > 0){
 
-    // Define dados para POST
-    let postData = {
-      pageIndex: pageDocCur[0].pageIndex,
-      pageName: pageDocCur[0].name,
-      ocrData: ocrData.ocrData
+      // Recupera a definicao da pagina
+      var pageDocCur = pagesDoc.filter((page)=>{
+        return page.pageIndex == ocrData.resPageIndex
+      })
+
+      // Define dados para POST
+      let postData = {
+        pageIndex: pageDocCur[0].pageIndex,
+        pageName: pageDocCur[0].name,
+        ocrData: ocrData.ocrData
+      }
+
+      ocrDataFull.push(postData)
     }
-
-    ocrDataFull.push(postData)
 
   })
 
@@ -333,14 +336,19 @@ function processWKSv3(ocr, cb){
 
     let result = wksResponse.body
 
+    console.log('##############################################')
+    console.log(result)
+    console.log(result.length)
+    console.log('##############################################')
+
     ocr.map(function(ocrData) {
       
       var wksCur = result.filter((page)=>{
         return page.pageIndex == ocrData.resPageIndex
       })
 
-      ocrData.wks = wksCur[0].NLU
-
+      if (wksCur.length != 0) ocrData.wks = wksCur[0].NLU
+      
       return ocrData
 
     })
@@ -350,9 +358,9 @@ function processWKSv3(ocr, cb){
   }).catch(function(err){
 
     console.log('Erro EndPoint Handled !')
-    console.log(err.error)
+    console.log(err)
 
-    cb()
+    cb(err)
 
   })
 
@@ -915,7 +923,7 @@ module.exports = function(app) {
 
                   console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
 
-                  processWKSv3(reqWKS.ocr, () => {
+                  processWKSv3(reqWKS.ocr, (err) => {
 
                     console.log('Processamento WKS finalizado')
                     console.log("*******************************")

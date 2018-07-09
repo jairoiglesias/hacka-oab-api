@@ -178,28 +178,32 @@ function processRuleValidator(wksResponse){
 
         wksResponse.forEach((wksData, wksIndex) => {
 
-          let entities = wksData.entities
+          if(wksData != undefined){
 
-          if(entities){
+            let entities = wksData.entities
 
-            const [dbItem] = entities.filter(({type}) => type === value.title)
-            
-            if (!dbItem) return null;
+            if(entities){
 
-            const text = dbItem.text;
-            
-            // return {
-            //   idField: value._id,
-            //   value: text
-            // }
+              const [dbItem] = entities.filter(({type}) => type === value.title)
+              
+              if (!dbItem) return null;
 
-            inputs.push({
-              idField: value._id,
-              value: text
-            })
+              const text = dbItem.text;
+              
+              // return {
+              //   idField: value._id,
+              //   value: text
+              // }
+
+              inputs.push({
+                idField: value._id,
+                value: text
+              })
+
+            }
 
           }
-
+          
         })
 
       })
