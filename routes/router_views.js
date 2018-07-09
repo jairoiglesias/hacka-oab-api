@@ -199,7 +199,7 @@ module.exports = function(app) {
     let dadosFront = ''
     let dadosNLU = []
     let dadosAnalise = []
-    
+
     console.log('variavel docSend:')
     console.log(req.body.docSend)
     console.log('==============================')
@@ -929,18 +929,6 @@ module.exports = function(app) {
     })
     
   })
-
-  
-  app.get('/catossinho', (req, res) => {
-
-    var resp = {
-      fileNameUpload, dadosFront, dadosNLU, dadosAnalise
-    }
-
-    res.send(resp)
-
-  })
-
 
   app.get('/response_upload', (req, res) => {
 
