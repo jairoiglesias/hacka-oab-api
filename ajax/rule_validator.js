@@ -30,6 +30,8 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
       dadosSolicitacao = MOCK_SOLICITACAO
     }
 
+    console.log(dadosSolicitacao)
+
     console.log('==============================================')
     
     promisify(dokia.view)('field', 'field-view').then((resultView)=>{
