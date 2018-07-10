@@ -34,7 +34,7 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
     }
     else{
       console.log('dadosSolicitacao recebidos com sucesso !!!')
-      _dadosSolicitacao = JSON.parse(dadosSolicitacao)
+      _dadosSolicitacao = (typeof dadosSolicitacao == 'object') ? dadosSolicitacao : JSON.parse(dadosSolicitacao)
     }
 
     console.log('+++++++++++++++++++++++++++++++++++++=')
