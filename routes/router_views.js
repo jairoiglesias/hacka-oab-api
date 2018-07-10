@@ -6,6 +6,7 @@ var path = require('path')
 var url = require('url')
 var rp = require('request-promise').defaults({simple : false})
 
+let m_gCloudStorage = require('./../ajax/gcloud_storage')
 let m_ruleValidator = require('./../ajax/rule_validator')
 
 let m_connectDb = require('./../libs/connectdb')
@@ -719,19 +720,25 @@ module.exports = function(app) {
 
                       console.log('Validação de regras finalizada!')
 
-                      // Salva os dados no MongoDb
-                      let reg = {
-                        uuid: _uuid,
-                        status: 'finish',
-                        created: new Date(),
-                        ocr: reqWKS
-                      }
+                      // Salva os arquivos no Google Cloud Storage
+                      m_gCloudStorage.gCloudStorageSubmit(_uuid).then((urls) => {
 
-                      db.collection('analise_ocr').insert(reg, (err, records) => {
-                        if(err) throw err
-                        console.log('Registro inserido no MongoDb')
+                        // Salva os dados no MongoDb
+                        let reg = {
+                          uuid: _uuid,
+                          status: 'finish',
+                          created: new Date(),
+                          ocr: reqWKS,
+                          urls
+                        }
+
+                        db.collection('analise_ocr').insert(reg, (err, records) => {
+                          if(err) throw err
+                          console.log('Registro inserido no MongoDb')
+                        })
+
+
                       })
-
 
                     })
 
@@ -757,7 +764,7 @@ module.exports = function(app) {
     
   })
 
-  app.get('/get_image_page/:uuid/:index', (req, res) => {
+  app.get('/get_image_page_old/:uuid/:index', (req, res) => {
 
     var uuid = req.params.uuid
     var index = req.params.index
@@ -780,6 +787,51 @@ module.exports = function(app) {
         res.send(data)
       }
       
+    })
+
+  })
+
+  app.get('/get_image_page/:uuid/:index', (req, res) => {
+
+    var uuid = req.params.uuid
+    var index = req.params.index
+
+    var fileName = `page_${index}.png`
+
+    db.collection('analise_ocr').findOne({"uuid": uuid}, (err, records) => {
+      if(err) throw err
+      
+      let item = records.urls.filter((urlData) => {
+        return urlData.fileItem == fileName
+      })
+
+      // console.log(item)
+
+      let url = item[0].url
+
+      // res.send(url)
+
+      // Efetua o download do PDF
+      let requestOptions = {
+        method: 'GET',
+        resolveWithFullResponse: true,
+        uri: url,
+        encoding: "binary",
+        // headers: {
+        //   'Content-Type': 'image/png'
+        // },
+        // rejectUnauthorized: false
+      }
+
+      rp(requestOptions).then((response) => {
+
+        let body = response.body
+
+        res.writeHead(200, {'Content-Type': 'image/png' });
+        res.end(body, 'binary');
+
+      })
+
     })
 
   })
