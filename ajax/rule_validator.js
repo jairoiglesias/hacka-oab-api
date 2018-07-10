@@ -5,7 +5,9 @@ const { promisify } = require('util')
 const VALIDATOR_URL = 'https://validator-dokia.mybluemix.net/api/validator'
 const ID_RULE = "90ad561435df4489b29e9fa8b4540315"
 
-let MOCK_SOLICITACAO = {"id_solicitacao_cliente":"54834708","0":"54834708","carteira":"Santander NPL1","1":"Santander NPL1","origem":"A","2":"A","agencia_fornecedor":"Ferreira e Chagas Advogados","3":"Ferreira e Chagas Advogados","devedor":"RONALDO CABRAL DUTRA,","4":"RONALDO CABRAL DUTRA,","nro_operacao_sistema":"8492206","5":"8492206","nro_operacao":"2290000172180-32-0424","6":"2290000172180-32-0424","setor":"PCJ","7":"PCJ","tipo":"GASTO","8":"GASTO","autorizacao":"","9":"","nro_despesa":"","10":"","data_gasto":"2018-01-24","11":"2018-01-24","tipo_gasto":"NC_Correios","12":"NC_Correios","moeda":"R$","13":"R$","valor":"19.70","14":"19.70","status_pagamento":"Carregado","15":"Carregado","data_aprovacao":"2018-02-14","16":"2018-02-14","id_juizo":"","17":"","id_reclamo":"\r\n","18":"\r\n","cnpj":"22222222222","19":"22222222222"}
+// let MOCK_SOLICITACAO = {"id_solicitacao_cliente":"54834708","0":"54834708","carteira":"Santander NPL1","1":"Santander NPL1","origem":"A","2":"A","agencia_fornecedor":"Ferreira e Chagas Advogados","3":"Ferreira e Chagas Advogados","devedor":"RONALDO CABRAL DUTRA,","4":"RONALDO CABRAL DUTRA,","nro_operacao_sistema":"8492206","5":"8492206","nro_operacao":"2290000172180-32-0424","6":"2290000172180-32-0424","setor":"PCJ","7":"PCJ","tipo":"GASTO","8":"GASTO","autorizacao":"","9":"","nro_despesa":"","10":"","data_gasto":"2018-01-24","11":"2018-01-24","tipo_gasto":"NC_Correios","12":"NC_Correios","moeda":"R$","13":"R$","valor":"19.70","14":"19.70","status_pagamento":"Carregado","15":"Carregado","data_aprovacao":"2018-02-14","16":"2018-02-14","id_juizo":"","17":"","id_reclamo":"\r\n","18":"\r\n","cnpj":"22222222222","19":"22222222222"}
+
+let MOCK_SOLICITACAO = {"id_solicitacao_cliente":"56098356","carteira":"Santander NPL1","origem":"A","agencia_fornecedor":"Ferreira e Chagas Advogados","devedor":"DEOCLECIO APARECIDO PARAIZO","nro_operacao_sistema":"33537205","nro_operacao":"620334073010263","setor":"PCJ","tipo":"GASTO","autorizacao":"","nro_despesa":"","data_gasto":"2018-02-07","tipo_gasto":"NC_Correios","moeda":"R$","valor":"19.70","status_pagamento":"Carregado","data_aprovacao":"2018-03-20","id_juizo":"","id_reclamo":"\r\n","cnpj":"11111111111","razao_social":"santander"}
 
 const cloudant = Cloudant({
   "username": "96ba32ad-e17d-494f-a93e-72240b1e0b16-bluemix",
@@ -34,7 +36,7 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
 
     console.log('+++++++++++++++++++++++++++++++++++++=')
     console.log(dadosSolicitacao)
-    
+
     console.log('==============================================')
     
     promisify(dokia.view)('field', 'field-view').then((resultView)=>{
@@ -45,20 +47,9 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
         return
       }
 
-      // const entities = wksResponse.entities
-
-      // if(entities == undefined) {
-      //   console.log('Nao existem entidades para validacao de regra')
-      //   resolve()
-      //   return
-      // }
-
       let inputs = []
 
       const result = resultView.rows.map(({value}) => {
-
-        // console.log(value)
-        // console.log('-----------------------------------------------------')
 
         wksResponse.forEach((wksData, wksIndex) => {
 
@@ -93,6 +84,10 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
         // Recupera os ID de regra referentes aos dados de solicitação
         Object.keys(dadosSolicitacao).forEach((solicData, solicIndex) => {
 
+          console.log(solicData)
+          console.log(value.title)
+          console.log('############################')
+          
           if(solicData == value.title){
 
             console.log('------------------------------')
