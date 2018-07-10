@@ -54,8 +54,8 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
 
       const result = resultView.rows.map(({value}) => {
 
-        console.log(value)
-        console.log('-----------------------------------------------------')
+        // console.log(value)
+        // console.log('-----------------------------------------------------')
 
         wksResponse.forEach((wksData, wksIndex) => {
 

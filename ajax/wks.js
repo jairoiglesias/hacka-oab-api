@@ -206,18 +206,8 @@ function processWKSv3(ocr, cb){
         return page.pageIndex == ocrData.resPageIndex
       })
 
-      if (wksCur.length != 0) {
-        
+      if(wksCur.length != 0){
         ocrData.wks = wksCur[0].NLU
-        
-        // Fix Linha Digital Comprovante
-        console.log('@@=========================================@@')
-        
-        ocrData.wks.entities.forEach((entData, entIndex) => {
-          console.log(entData)
-        })
-        
-        console.log('++++++')
       }
       
       return ocrData
