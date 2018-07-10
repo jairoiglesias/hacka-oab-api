@@ -26,16 +26,19 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
     console.log('['+arguments.callee.name+'] Processando ...')
     console.log('==============================================')
     
+    let _dadosSolicitacao = ''
+
     if(dadosSolicitacao == undefined){
       console.log('dadosSolicitacao nao recebidos ... Usando MOCK !!!')
-      dadosSolicitacao = MOCK_SOLICITACAO
+      _dadosSolicitacao = MOCK_SOLICITACAO
     }
     else{
       console.log('dadosSolicitacao recebidos com sucesso !!!')
+      _dadosSolicitacao = JSON.parse(dadosSolicitacao)
     }
 
     console.log('+++++++++++++++++++++++++++++++++++++=')
-    console.log(dadosSolicitacao)
+    console.log(_dadosSolicitacao)
 
     console.log('==============================================')
     
@@ -55,17 +58,17 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
 
           let promiseDadosSolicitacao = new Promise((resolve, reject) => {
 
-            let tam = Object.keys(dadosSolicitacao).length
+            let tam = Object.keys(_dadosSolicitacao).length
 
             // Recupera os ID de regra referentes aos dados de solicitação
-            Object.keys(dadosSolicitacao).forEach((solicData, solicIndex) => {
+            Object.keys(_dadosSolicitacao).forEach((solicData, solicIndex) => {
 
               // console.log(solicData)
               // console.log(value.title)
               // console.log('############################')
               
               if(String(solicData) == String(value.title)){
-                
+
                 console.log('------------------------------')
                 console.log('achou item')
                 console.log(solicData)
@@ -74,7 +77,7 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
 
                 inputs.push({
                   idField: value._id,
-                  value: dadosSolicitacao[solicData]
+                  value: _dadosSolicitacao[solicData]
                 })
 
               }
