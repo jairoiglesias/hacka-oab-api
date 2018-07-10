@@ -49,90 +49,125 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
 
       let inputs = []
 
-      const result = resultView.rows.map(({value}) => {
+      let promiseParseCloudant = new Promise((resolve, reject) => {
 
-        wksResponse.forEach((wksData, wksIndex) => {
+        const result = resultView.rows.map(({value}) => {
 
-          if(wksData != undefined){
+          let promiseDadosSolicitacao = new Promise((resolve, reject) => {
 
-            let entities = wksData.entities
+            let tam = Object.keys(dadosSolicitacao).length
 
-            if(entities){
+            // Recupera os ID de regra referentes aos dados de solicitação
+            Object.keys(dadosSolicitacao).forEach((solicData, solicIndex) => {
 
-              const [dbItem] = entities.filter(({type}) => type === value.title)
+              // console.log(solicData)
+              // console.log(value.title)
+              // console.log('############################')
               
-              if (!dbItem) return null;
+              if(solicData == value.title){
 
-              const text = dbItem.text;
-              
-              // return {
-              //   idField: value._id,
-              //   value: text
-              // }
+                console.log('------------------------------')
+                console.log('achou item')
+                console.log(solicData)
+                console.log(value)
+                console.log('------------------------------')
 
-              inputs.push({
-                idField: value._id,
-                value: text
-              })
+                inputs.push({
+                  idField: value._id,
+                  value: dadosSolicitacao[solicData]
+                })
 
-            }
+              }
 
-          }
-          
-        })
+              if(tam == (solicIndex + 1)){
+                resolve()
+              }
 
-        // Recupera os ID de regra referentes aos dados de solicitação
-        Object.keys(dadosSolicitacao).forEach((solicData, solicIndex) => {
-
-          console.log(solicData)
-          console.log(value.title)
-          console.log('############################')
-          
-          if(solicData == value.title){
-
-            console.log('------------------------------')
-            console.log('achou item')
-            console.log(solicData)
-            console.log(value)
-            console.log('------------------------------')
-
-            inputs.push({
-              idField: value._id,
-              value: dadosSolicitacao[solicData]
             })
 
-          }
+          })
+          
+          let promiseWks = new Promise((resolve, reject) => {
+
+            let tam = wksResponse.length
+
+            wksResponse.forEach((wksData, wksIndex) => {
+
+              if(wksData != undefined){
+
+                let entities = wksData.entities
+
+                if(entities){
+
+                  const [dbItem] = entities.filter(({type}) => type === value.title)
+                  
+                  if (!dbItem) return null;
+
+                  const text = dbItem.text;
+                  
+                  // return {
+                  //   idField: value._id,
+                  //   value: text
+                  // }
+
+                  inputs.push({
+                    idField: value._id,
+                    value: text
+                  })
+
+                }
+
+              }
+
+              if(tam == (wksIndex + 1)){
+                resolve()
+              }
+              
+            })
+
+
+          })
+
+          Promise.all([promiseDadosSolicitacao, promiseWks]).then(() => {
+            resolve()
+          })
 
         })
 
       })
-      
-      // .filter(item => !!item)
 
-      const data = {
-        idRule: ID_RULE,
-        inputs: inputs
-      }
+      promiseParseCloudant.then(() => {
 
-      console.log('Parametros do EndPoint de Validacao de Regras!')
-      console.log(data)
-      console.log('****************')
-      
-      post(VALIDATOR_URL, data).then((response)=>{
+        console.log('Promises de regras de validacao resolvidas com sucesso!')
+
+        const data = {
+          idRule: ID_RULE,
+          inputs: inputs
+        }
+
+        console.log('Parametros do EndPoint de Validacao de Regras!')
+        console.log(data)
+        console.log('****************')
         
-        console.log('response ruleValidator')
-        console.log(response.data)
+        post(VALIDATOR_URL, data).then((response)=>{
+          
+          console.log('response ruleValidator')
+          console.log(response.data)
 
-        // return response;
-        resolve(response.data)
+          // return response;
+          resolve(response.data)
 
-      }).catch((error)=>{
-        
-        console.log('Erro na requisicao da validacao de regras')
-        console.log(error.response.status)
-        resolve()
+        }).catch((error)=>{
+          
+          console.log('Erro na requisicao da validacao de regras')
+          console.log(error.response.status)
+          resolve()
+
+        })
+
 
       })
+
 
     })
 
