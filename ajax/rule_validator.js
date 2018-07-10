@@ -64,8 +64,8 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
               // console.log(value.title)
               // console.log('############################')
               
-              if(solicData == value.title){
-
+              if(String(solicData) == String(value.title)){
+                
                 console.log('------------------------------')
                 console.log('achou item')
                 console.log(solicData)
