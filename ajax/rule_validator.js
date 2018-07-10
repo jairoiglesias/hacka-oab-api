@@ -26,12 +26,15 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
     
     if(dadosSolicitacao == undefined){
       console.log('dadosSolicitacao nao recebidos ... Usando MOCK !!!')
-      console.log('+++++++++++++++++++++++++++++++++++++=')
       dadosSolicitacao = MOCK_SOLICITACAO
     }
+    else{
+      console.log('dadosSolicitacao recebidos com sucesso !!!')
+    }
 
+    console.log('+++++++++++++++++++++++++++++++++++++=')
     console.log(dadosSolicitacao)
-
+    
     console.log('==============================================')
     
     promisify(dokia.view)('field', 'field-view').then((resultView)=>{
@@ -92,7 +95,13 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
 
           if(solicData == value.title){
 
-             inputs.push({
+            console.log('------------------------------')
+            console.log('achou item')
+            console.log(solicData)
+            console.log(value)
+            console.log('------------------------------')
+
+            inputs.push({
               idField: value._id,
               value: dadosSolicitacao[solicData]
             })
