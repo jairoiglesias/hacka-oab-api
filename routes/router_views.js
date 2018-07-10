@@ -639,7 +639,7 @@ module.exports = function(app) {
         // Devolve o UUID para o cliente
         res.send({_uuid})
         
-        dadosFront = req.body.docSend
+        let dadosSolicitacao = req.body.dadosSolicitacao
 
         // Cria objeto JSON que sera usado para envio de requisicao
         var reqWKS = {
@@ -713,7 +713,7 @@ module.exports = function(app) {
 
                     })
 
-                    m_ruleValidator.processRuleValidator(arrayWKS).then((validation)=>{
+                    m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao).then((validation)=>{
 
                       reqWKS.validation = validation
 

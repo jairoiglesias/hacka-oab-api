@@ -212,7 +212,7 @@ function processWKSv3(ocr, cb){
         
         // Fix Linha Digital Comprovante
         console.log('@@=========================================@@')
-
+        
         ocrData.wks.entities.forEach((entData, entIndex) => {
           console.log(entData)
         })
