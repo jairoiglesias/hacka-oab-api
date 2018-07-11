@@ -86,7 +86,7 @@ block content
             })
 
             promise.then(function(result){
-                $('#status_ocr').text(JSON.stringify(result))
+                $('#status_ocr').text(JSON.stringify(result, undefined, 2))
             })
 
         })
