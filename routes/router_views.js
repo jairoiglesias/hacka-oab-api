@@ -713,14 +713,16 @@ module.exports = function(app) {
 
                     if(ocrNaoIdentificado.length != 0){
 
-                      console.log('OCR da pagina ' + ocrNaoIdentificado[0].resPageIndex + ' não identificada!')
+                      console.log('OCR não identificada!')
+                      console.log(ocrNaoIdentificado)
                       
                       // Salva os dados no MongoDb
                       let reg = {
                         uuid: _uuid,
                         created: new Date(),
                         ocr: reqWKS,
-                        status: 'documento nao localizado'
+                        status: 'documento nao localizado',
+                        notFound: ocrNaoIdentificado
                       }
 
                       db.collection('analise_ocr').insert(reg, (err, records) => {
