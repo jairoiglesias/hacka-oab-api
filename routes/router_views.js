@@ -6,6 +6,7 @@ var path = require('path')
 var url = require('url')
 var rp = require('request-promise').defaults({simple : false})
 
+let m_ocrParser = require('./../ajax/ocr_parser.js')
 let m_gCloudStorage = require('./../ajax/gcloud_storage')
 let m_ruleValidator = require('./../ajax/rule_validator')
 
@@ -695,56 +696,95 @@ module.exports = function(app) {
                 }
                 else{
 
-                  let m_WKS = require('./../ajax/wks.js')
-
-                  console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
-
-                  m_WKS.processWKSv3(reqWKS.ocr, (err) => {
-
-                    console.log('Processamento WKS finalizado')
-                    console.log("*******************************")
-
-                    console.log('Iniciando validação de regras')
-                    
-                    let arrayWKS = []
-
-                    reqWKS.ocr.forEach((value, index) => {
-
-                      arrayWKS.push(value.wks)
-
-                    })
-
-                    m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao).then((validation)=>{
-
-                      reqWKS.validation = validation
-
-                      console.log('Validação de regras finalizada!')
-
-                      // Salva os arquivos no Google Cloud Storage
-                      m_gCloudStorage.gCloudStorageSubmit(_uuid).then((urls) => {
-
-                        // Salva os dados no MongoDb
-                        let reg = {
-                          uuid: _uuid,
-                          status: 'finish',
-                          created: new Date(),
-                          ocr: reqWKS,
-                          urls
-                        }
-
-                        db.collection('analise_ocr').insert(reg, (err, records) => {
-                          if(err) throw err
-                          console.log('Registro inserido no MongoDb')
-                        })
-
-
-                      })
-
-                    })
-
-                    
+                  let promisesOcrParser = reqWKS.ocr.map((ocrData, ocrIndex) => {
+                    return m_ocrParser.ocrParser(ocrData)
                   })
 
+                  Promise.all(promisesOcrParser).then((ocrParseResult) => {
+
+                    console.log('Ocr Parser feito com sucesso')
+                    // console.log(JSON.stringify(docNames))
+
+                    // process.exit()
+
+                    let ocrNaoIdentificado = ocrParseResult.filter((ocrParseData) => {
+                      return ocrParseData.itens.length == 0
+                    })
+
+                    if(ocrNaoIdentificado.length != 0){
+
+                      console.log('OCR da pagina ' + ocrNaoIdentificado[0].resPageIndex + ' não identificada!')
+                      
+                      // Salva os dados no MongoDb
+                      let reg = {
+                        uuid: _uuid,
+                        created: new Date(),
+                        ocr: reqWKS,
+                        status: 'documento nao localizado'
+                      }
+
+                      db.collection('analise_ocr').insert(reg, (err, records) => {
+                        if(err) throw err
+                        console.log('Registro inserido no MongoDb')
+                      })
+
+                    }
+                    else{
+
+                      let m_WKS = require('./../ajax/wks.js')
+
+                      console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
+
+                      m_WKS.processWKSv3(reqWKS.ocr, (err) => {
+
+                        console.log('Processamento WKS finalizado')
+                        console.log("*******************************")
+
+                        console.log('Iniciando validação de regras')
+                        
+                        let arrayWKS = []
+
+                        reqWKS.ocr.forEach((value, index) => {
+
+                          arrayWKS.push(value.wks)
+
+                        })
+
+                        m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao).then((validation)=>{
+
+                          reqWKS.validation = validation
+
+                          console.log('Validação de regras finalizada!')
+
+                          // Salva os arquivos no Google Cloud Storage
+                          m_gCloudStorage.gCloudStorageSubmit(_uuid).then((urls) => {
+
+                            // Salva os dados no MongoDb
+                            let reg = {
+                              uuid: _uuid,
+                              status: 'finish',
+                              created: new Date(),
+                              ocr: reqWKS,
+                              urls
+                            }
+
+                            db.collection('analise_ocr').insert(reg, (err, records) => {
+                              if(err) throw err
+                              console.log('Registro inserido no MongoDb')
+                            })
+
+
+                          })
+
+                        })
+
+                        
+                      })
+
+                    }
+
+
+                  })
 
                 }
 
