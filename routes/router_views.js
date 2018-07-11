@@ -715,7 +715,7 @@ module.exports = function(app) {
 
                       console.log('OCR não identificada!')
                       console.log(ocrNaoIdentificado)
-                      
+
                       // Salva os dados no MongoDb
                       let reg = {
                         uuid: _uuid,
@@ -735,9 +735,21 @@ module.exports = function(app) {
 
                       let m_WKS = require('./../ajax/wks.js')
 
+                      reqWKS.ocr = reqWKS.ocr.map((ocrItem, ocrIndex) => {
+
+                        let filter = ocrParseResult.filter((ocrParseItem) => {
+                          return ocrParseItem.resPageIndex == ocrItem.resPageIndex
+                        })
+
+                        ocrItem.name = filter[0].itens[0].name
+
+                        return ocrItem
+
+                      })
+
                       console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
 
-                      m_WKS.processWKSv3(reqWKS.ocr, (err) => {
+                      m_WKS.processWKSv4(reqWKS.ocr, (err) => {
 
                         console.log('Processamento WKS finalizado')
                         console.log("*******************************")
@@ -753,7 +765,7 @@ module.exports = function(app) {
                         })
 
                         m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao).then((validation)=>{
-
+                          
                           reqWKS.validation = validation
 
                           console.log('Validação de regras finalizada!')

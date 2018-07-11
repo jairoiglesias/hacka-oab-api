@@ -227,6 +227,81 @@ function processWKSv3(ocr, cb){
 
 }
 
+// Efetua o processamento de WKS enviando todo os OCR já com o nome dos documentos identificados em um unico Array 
+function processWKSv4(ocr, cb){
+
+  console.log(typeof ocr)
+
+  let ocrDataFull = []
+
+  ocr.forEach((ocrData, ocrIndex) => {
+
+    if(ocrData.ocrData.length > 0){
+
+      // Define dados para POST
+      let postData = {
+        pageIndex: ocrData.resPageIndex,
+        pageName: ocrData.name,
+        ocrData: ocrData.ocrData
+      }
+
+      ocrDataFull.push(postData)
+    }
+
+  })
+
+  let urlWKS = 'https://node-red-dokia.mybluemix.net/classifica/v2'
+
+  let requestOptions = {
+    method: 'POST',
+    resolveWithFullResponse: true,
+    uri: urlWKS,
+    json: true,
+    body: ocrDataFull
+  }
+
+  console.log('['+arguments.callee.name+'] Processando ...')
+
+  rp(requestOptions).then(function(wksResponse){
+
+    // console.log(JSON.stringify(wksResponse.body))
+    // console.log("@===================================@")
+    // process.exit()
+
+    let result = wksResponse.body
+
+    console.log('##############################################')
+    console.log(result)
+    console.log(result.length)
+    console.log('##############################################')
+
+    ocr.map(function(ocrData) {
+      
+      var wksCur = result.filter((page)=>{
+        return page.pageIndex == ocrData.resPageIndex
+      })
+
+      if(wksCur.length != 0){
+        ocrData.wks = wksCur[0].NLU
+      }
+      
+      return ocrData
+
+    })
+
+    cb()
+
+  }).catch(function(err){
+
+    console.log('Erro EndPoint Handled !')
+    console.log(err)
+
+    cb(err)
+
+  })
+
+}
+
 module.exports = {
-    processWKS, processWKSv2, processWKSv3
+    processWKS, processWKSv2, processWKSv3, processWKSv4
 }
