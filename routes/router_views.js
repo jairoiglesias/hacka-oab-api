@@ -765,7 +765,7 @@ module.exports = function(app) {
                         })
 
                         m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao).then((validation)=>{
-                          
+
                           reqWKS.validation = validation
 
                           console.log('Validação de regras finalizada!')
@@ -855,36 +855,45 @@ module.exports = function(app) {
     db.collection('analise_ocr').findOne({"uuid": uuid}, (err, records) => {
       if(err) throw err
       
-      let item = records.urls.filter((urlData) => {
-        return urlData.fileItem == fileName
-      })
+      let urls = records.urls
 
-      // console.log(item)
-
-      let url = item[0].url
-
-      // res.send(url)
-
-      // Efetua o download do PDF
-      let requestOptions = {
-        method: 'GET',
-        resolveWithFullResponse: true,
-        uri: url,
-        encoding: "binary",
-        // headers: {
-        //   'Content-Type': 'image/png'
-        // },
-        // rejectUnauthorized: false
+      if(urls == undefined){
+        res.send('Não existe storage de arquivos para este UUID')
       }
+      else{
 
-      rp(requestOptions).then((response) => {
+        let item = urls.filter((urlData) => {
+          return urlData.fileItem == fileName
+        })
 
-        let body = response.body
+        // console.log(item)
 
-        res.writeHead(200, {'Content-Type': 'image/png' });
-        res.end(body, 'binary');
+        let url = item[0].url
 
-      })
+        // res.send(url)
+
+        // Efetua o download do PDF
+        let requestOptions = {
+          method: 'GET',
+          resolveWithFullResponse: true,
+          uri: url,
+          encoding: "binary",
+          // headers: {
+          //   'Content-Type': 'image/png'
+          // },
+          // rejectUnauthorized: false
+        }
+
+        rp(requestOptions).then((response) => {
+
+          let body = response.body
+
+          res.writeHead(200, {'Content-Type': 'image/png' });
+          res.end(body, 'binary');
+
+        })
+
+      }
 
     })
 
