@@ -869,8 +869,8 @@ module.exports = function(app) {
 
         // console.log(item)
 
-        if(item == undefined){
-          res.send('Não existe texto extraído dessa pagina!')
+        if(item.length == 0){
+          res.send('Não existe imagem válida para esta pagina!')
         }
         else{
 
