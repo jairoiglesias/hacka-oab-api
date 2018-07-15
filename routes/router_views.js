@@ -764,6 +764,10 @@ module.exports = function(app) {
 
                         })
 
+                        console.log('===================')
+                        console.log(dadosSolicitacao)
+                        console.log('===================')
+
                         m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao).then((validation)=>{
 
                           reqWKS.validation = validation
