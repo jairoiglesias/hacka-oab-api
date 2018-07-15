@@ -649,8 +649,8 @@ module.exports = function(app) {
         }
 
         // Guarda o nome original do arquivo sem extensao
-        var originalname = path.parse(outputFilePath).base
-        var originalnameRaw = originalname.split('.')[0]
+        var originalname = path.parse(outputFilePath).name + '.pdf'
+        // var originalnameRaw = originalname.split('.')[0]
 
         var newFileNamePDF = './uploads/'+_uuid+'/'+originalname
         var newFolderName = './uploads/'+_uuid
