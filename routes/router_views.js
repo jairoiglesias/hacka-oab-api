@@ -701,7 +701,9 @@ module.exports = function(app) {
                 else{
 
                   let promisesOcrParser = reqWKS.ocr.map((ocrData, ocrIndex) => {
-                    return m_ocrParser.ocrParser(ocrData)
+                    if(ocrData.ocrData.length > 0){
+                      return m_ocrParser.ocrParser(ocrData)
+                    }
                   })
 
                   Promise.all(promisesOcrParser).then((ocrParseResult) => {
@@ -710,44 +712,50 @@ module.exports = function(app) {
                     // console.log(JSON.stringify(ocrParseResult))
                     // process.exit()
 
-                    let pageNotFound = ocrParseResult.filter((ocrParseData) => {
-                      return ocrParseData.itens.length == 0
-                    })
+                    // Identifica quais documentos foram identificados
 
-                    if(pageNotFound.length != 0){
+                    let docFound = []
 
-                      console.log('Não foram identificados documentos em algumas paginas')
+                    ocrParseResult.forEach((ocrParseData, ocrParseIndex) => {
 
-                      // Identifica quais documentos foram identificados
-
-                      let docFound = []
-
-                      ocrParseResult.forEach((ocrParseData, ocrParseIndex) => {
+                      if(ocrParseData != undefined){
 
                         let parseItens = ocrParseData.itens.filter((itemData) => {
                           let name = itemData.name
-
+  
                           if(docNames.indexOf(name) != -1){
                             return true
                           }
-
+  
                         })
-
+  
                         if(parseItens.length > 0){
                           docFound.push(parseItens[0].name)
                         }
+                      }
 
-                      })
+                    })
 
-                      // Identifica quais documentos não foram identificados
+                    // Identifica quais documentos não foram identificados
 
-                      let docNotFound = docNames.filter((docName) => {
-                        return docFound.indexOf(docName) == -1
-                      })
+                    let docNotFound = docNames.filter((docName) => {
+                      return docFound.indexOf(docName) == -1
+                    })
+
+                    // Identifica se existe alguma pagina nao identificada
+                    let invalidPages = ocrParseResult.filter((ocrParseData) => {
+                      if(ocrParseData != undefined){
+                        return ocrParseData.itens.length == 0
+                      }
+                    })
+
+                    if (invalidPages.length != 0){
+
+                      console.log('Não foram identificados documentos em algumas paginas')
                       
                       // console.log(docFound)
                       // console.log(docNotFound)
-                      // console.log(pageNotFound)
+                      // console.log invalidPages)
                       // process.exit()
 
                       // Salva os dados no MongoDb
@@ -757,7 +765,7 @@ module.exports = function(app) {
                         ocr: reqWKS,
                         status: 'documento inválido',
                         ocrParser: {
-                          pageNotFound, docFound, docNotFound
+                         invalidPages, docFound, docNotFound
                         }
                       }
 
@@ -769,72 +777,110 @@ module.exports = function(app) {
                     }
                     else{
 
-                      let m_WKS = require('./../ajax/wks.js')
+                      let faltaDoc = false
 
-                      // Associa os nomes dos documentos no array principal
-                      reqWKS.ocr = reqWKS.ocr.map((ocrItem, ocrIndex) => {
+                      if(docNotFound.length > 0){
 
-                        let filter = ocrParseResult.filter((ocrParseItem) => {
-                          return ocrParseItem.resPageIndex == ocrItem.resPageIndex
-                        })
+                        if(docNotFound.length == 1 && (docNotFound.indexOf('print tj') == -1 && docNotFound.indexOf('determinação judicial') == -1)){
+                          faltaDoc = true
+                        }
+                        else{
+                          faltaDoc = true
+                        }
 
-                        ocrItem.name = filter[0].itens[0].name
+                      }
 
-                        return ocrItem
+                      if(faltaDoc){
 
-                      })
-
-                      console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
-
-                      m_WKS.processWKSv4(reqWKS.ocr, (err) => {
-
-                        console.log('Processamento WKS finalizado')
-                        console.log("*******************************")
-
-                        console.log('Iniciando validação de regras')
+                        console.log('faltam documentos')
                         
-                        let arrayWKS = []
+                        // Salva os dados no MongoDb
+                        let reg = {
+                          uuid: _uuid,
+                          created: new Date(),
+                          ocr: reqWKS,
+                          status: 'documento não localizados',
+                          ocrParser: {
+                           invalidPages, docFound, docNotFound
+                          }
+                        }
 
-                        reqWKS.ocr.forEach((value, index) => {
-
-                          arrayWKS.push(value.wks)
-
+                        db.collection('analise_ocr').insert(reg, (err, records) => {
+                          if(err) throw err
+                          console.log('Registro inserido no MongoDb')
                         })
 
-                        console.log('===================')
-                        console.log(dadosSolicitacao)
-                        console.log('===================')
-
-                        m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao).then((validation)=>{
-
-                          reqWKS.validation = validation
-
-                          console.log('Validação de regras finalizada!')
-
-                          // Salva os arquivos no Google Cloud Storage
-                          m_gCloudStorage.gCloudStorageSubmit(_uuid).then((urls) => {
-
-                            // Salva os dados no MongoDb
-                            let reg = {
-                              uuid: _uuid,
-                              status: 'finish',
-                              created: new Date(),
-                              ocr: reqWKS,
-                              urls
-                            }
-
-                            db.collection('analise_ocr').insert(reg, (err, records) => {
-                              if(err) throw err
-                              console.log('Registro inserido no MongoDb')
-                            })
-
-
+                      }
+                      else{
+                        
+                        let m_WKS = require('./../ajax/wks.js')
+  
+                        // Associa os nomes dos documentos no array principal
+                        reqWKS.ocr = reqWKS.ocr.map((ocrItem, ocrIndex) => {
+  
+                          let filter = ocrParseResult.filter((ocrParseItem) => {
+                            return ocrParseItem.resPageIndex == ocrItem.resPageIndex
                           })
-
+  
+                          ocrItem.name = filter[0].itens[0].name
+  
+                          return ocrItem
+  
                         })
+  
+                        console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
+  
+                        m_WKS.processWKSv4(reqWKS.ocr, (err) => {
+  
+                          console.log('Processamento WKS finalizado')
+                          console.log("*******************************")
+  
+                          console.log('Iniciando validação de regras')
+                          
+                          let arrayWKS = []
+  
+                          reqWKS.ocr.forEach((value, index) => {
+  
+                            arrayWKS.push(value.wks)
+  
+                          })
+  
+                          console.log('===================')
+                          console.log(dadosSolicitacao)
+                          console.log('===================')
+  
+                          m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao).then((validation)=>{
+  
+                            reqWKS.validation = validation
+  
+                            console.log('Validação de regras finalizada!')
+  
+                            // Salva os arquivos no Google Cloud Storage
+                            m_gCloudStorage.gCloudStorageSubmit(_uuid).then((urls) => {
+  
+                              // Salva os dados no MongoDb
+                              let reg = {
+                                uuid: _uuid,
+                                status: 'finish',
+                                created: new Date(),
+                                ocr: reqWKS,
+                                urls
+                              }
+  
+                              db.collection('analise_ocr').insert(reg, (err, records) => {
+                                if(err) throw err
+                                console.log('Registro inserido no MongoDb')
+                              })
+  
+  
+                            })
+  
+                          })
+  
+                          
+                        })
+                      }
 
-                        
-                      })
 
                     }
 
