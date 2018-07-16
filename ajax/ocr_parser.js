@@ -14,7 +14,11 @@ let documentWordKeys = [
             {
                 keys: ['guia', 'processo', 'valor', 'total', 'código', 'autentica', 'número', 'série', 'emissão', 'desarquivamento'],
                 percAcc: 80
-            }
+            },
+            {
+                keys: ['guia', 'número', 'documento', 'banco', 'valor', 'vencimento', 'agência', 'código', 'pagador', 'autentica'],
+                percAcc: 80
+            },
         ]
     },
     {
@@ -30,7 +34,11 @@ let documentWordKeys = [
         name: 'petição',
         mapKeys: [
             {
-                keys: ['processo', 'deferimento', 'requerer'],
+                keys: ['ação', 'execução', 'autos', 'deferimento', 'requerer'],
+                percAcc: 80
+            },
+            {
+                keys: ['ação', 'execução', 'processo', 'deferimento', 'requerer'],
                 percAcc: 80
             }
         ]

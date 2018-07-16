@@ -13,6 +13,10 @@ let m_ruleValidator = require('./../ajax/rule_validator')
 let m_connectDb = require('./../libs/connectdb')
 let db = ''
 
+let docNames = [
+  'guia', 'comprovante', 'petição', 'determinação judicial', 'print tj'
+]
+
 m_connectDb().then(function(dbInstance){
   db = dbInstance
 })
@@ -703,18 +707,48 @@ module.exports = function(app) {
                   Promise.all(promisesOcrParser).then((ocrParseResult) => {
 
                     console.log('Ocr Parser feito com sucesso')
-                    // console.log(JSON.stringify(docNames))
-
+                    // console.log(JSON.stringify(ocrParseResult))
                     // process.exit()
 
-                    let ocrNaoIdentificado = ocrParseResult.filter((ocrParseData) => {
+                    let pageNotFound = ocrParseResult.filter((ocrParseData) => {
                       return ocrParseData.itens.length == 0
                     })
 
-                    if(ocrNaoIdentificado.length != 0){
+                    if(pageNotFound.length != 0){
 
-                      console.log('OCR não identificada!')
-                      console.log(ocrNaoIdentificado)
+                      console.log('Não foram identificados documentos em algumas paginas')
+
+                      // Identifica quais documentos foram identificados
+
+                      let docFound = []
+
+                      ocrParseResult.forEach((ocrParseData, ocrParseIndex) => {
+
+                        let parseItens = ocrParseData.itens.filter((itemData) => {
+                          let name = itemData.name
+
+                          if(docNames.indexOf(name) != -1){
+                            return true
+                          }
+
+                        })
+
+                        if(parseItens.length > 0){
+                          docFound.push(parseItens[0].name)
+                        }
+
+                      })
+
+                      // Identifica quais documentos não foram identificados
+
+                      let docNotFound = docNames.filter((docName) => {
+                        return docFound.indexOf(docName) == -1
+                      })
+                      
+                      // console.log(docFound)
+                      // console.log(docNotFound)
+                      // console.log(pageNotFound)
+                      // process.exit()
 
                       // Salva os dados no MongoDb
                       let reg = {
@@ -722,7 +756,9 @@ module.exports = function(app) {
                         created: new Date(),
                         ocr: reqWKS,
                         status: 'documento nao localizado',
-                        notFound: ocrNaoIdentificado
+                        ocrParser: {
+                          pageNotFound, docFound, docNotFound
+                        }
                       }
 
                       db.collection('analise_ocr').insert(reg, (err, records) => {
@@ -735,6 +771,7 @@ module.exports = function(app) {
 
                       let m_WKS = require('./../ajax/wks.js')
 
+                      // Associa os nomes dos documentos no array principal
                       reqWKS.ocr = reqWKS.ocr.map((ocrItem, ocrIndex) => {
 
                         let filter = ocrParseResult.filter((ocrParseItem) => {
