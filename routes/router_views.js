@@ -755,7 +755,7 @@ module.exports = function(app) {
                         uuid: _uuid,
                         created: new Date(),
                         ocr: reqWKS,
-                        status: 'documento nao localizado',
+                        status: 'documento inválido',
                         ocrParser: {
                           pageNotFound, docFound, docNotFound
                         }
