@@ -8,7 +8,6 @@ var bodyParser = require('body-parser');
 var load = require('express-load');
 var session = require('express-session');
 // var consolidate = require('consolidate');     // Permite utilizar mais de um Template Engine
-// var expressVue = require('express-vue');
 
 var app = express();
 

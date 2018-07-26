@@ -145,7 +145,7 @@ function processaOCRLoteV2(result, reqWKS, originalnameRaw, callback){
 
 module.exports = function(app) {
 
-  var upload = multer({
+  var upload = multer({ 
     dest: 'uploads/' 
   })
 
@@ -729,6 +729,8 @@ module.exports = function(app) {
 
     promiseParsePost.then((result) => {
 
+      let socketId = req.body.socket_id
+
       let newFileNamePDF = result.newFileNamePDF
       let newFolderName = result.newFolderName
 
@@ -894,6 +896,7 @@ module.exports = function(app) {
                     db.collection('analise_ocr').insert(reg, (err, records) => {
                       if(err) throw err
                       console.log('Registro inserido no MongoDb')
+                      res.app.io.to(socketId).emit('msg', 'finish')
                     })
 
 

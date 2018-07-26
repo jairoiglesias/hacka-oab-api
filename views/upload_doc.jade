@@ -9,6 +9,20 @@ block content
   
     $(document).ready(function(){
 
+        const socket = io()
+
+        socket.on('connect', () => {
+            alertify.success('Web Socket Conectado')
+            console.log(socket)
+        })
+
+        socket.on('msg', (msg) => {
+            if(msg == 'finish'){
+                alertify.success('Processamento Finalizado')
+                mostraStatus()
+            }
+        })
+
         var lastUUID = ''
 
         $('#frm_upload_doc').submit(function(e){
@@ -28,6 +42,7 @@ block content
                 // Monta um objeto FormData com os arquivos
                 var formData = new FormData();
                 formData.append('file_doc', file);
+                formData.append('socket_id', socket.id)
 
                 $('#ocr_result').text('Processando OCR ...')
                 
@@ -81,6 +96,12 @@ block content
 
             e.preventDefault()
 
+            mostraStatus()
+
+        })
+
+        function mostraStatus(e){
+
             let _url = 'status_ocr/'+lastUUID._uuid
 
             var promise = $.ajax({
@@ -91,34 +112,38 @@ block content
             promise.then(function(result){
                 $('#status_ocr').text(JSON.stringify(result, undefined, 2))
             })
-
-        })
+        }
       
     })  
 
     
   div(class='container')
-    h2 Modulo de Teste - OCR Google Cloud Vision
-    //- a(class='btn btn-info' href='get_all_files'  target='_blank') Listar Urls dos Textos
-    hr
-    h3 Metodo Upload do Computador
-    form(method="post" id="frm_upload_doc" enctype="multipart/form-data")
-        //- input(class='form-control' type='file' name='file_doc' id='file_doc' accept=".jpg,.jpeg,.png,.tiff")
-        input(class='form-control' type='file' name='file_doc' id='file_doc' accept=".pdf")
+    div(style="float:left;width:40%")
+        h2 Modulo de Teste - OCR Google Cloud Vision
+        //- a(class='btn btn-info' href='get_all_files'  target='_blank') Listar Urls dos Textos
+        hr
+        h3 Metodo Upload do Computador
+        form(method="post" id="frm_upload_doc" enctype="multipart/form-data")
+            //- input(class='form-control' type='file' name='file_doc' id='file_doc' accept=".jpg,.jpeg,.png,.tiff")
+            input(class='form-control' type='file' name='file_doc' id='file_doc' accept=".pdf")
+            br
+            input(class='btn btn-success' type='submit' value='enviar' id='btn_enviar')
+        hr
+        h3 Metodo por URL Externa
+        form(method="post" id="frm_process_ocr")
+            input(class="form-control" type="text" id="urlFile" name="urlFile")
+            br
+            input(class='btn btn-success' type='submit' value='enviar' id='btn_enviar_ocr')
+            br
+        //- a(id='url_ocr_atual')
+        pre(id='ocr_result')
+        //- hr
+        //- h3 Consultar Status OCR (Ultimo UUID)
+        //- br
+        //- input(class='btn btn-success' type='button' value='consultar status' id='btn_consultar_status')
+    div(style="float:right; width:50%")
+        h3 Status Processamento Full
         br
-        input(class='btn btn-success' type='submit' value='enviar' id='btn_enviar')
-    hr
-    h3 Metodo por URL Externa
-    form(method="post" id="frm_process_ocr")
-        input(class="form-control" type="text" id="urlFile" name="urlFile")
+        pre(id='ocr_result')
         br
-        input(class='btn btn-success' type='submit' value='enviar' id='btn_enviar_ocr')
-        br
-    //- a(id='url_ocr_atual')
-    pre(id='ocr_result')
-    hr
-    h3 Consultar Status OCR (Ultimo UUID)
-    br
-    input(class='btn btn-success' type='button' value='consultar status' id='btn_consultar_status')
-    br
-    pre(id='status_ocr')
+        pre(id='status_ocr')
