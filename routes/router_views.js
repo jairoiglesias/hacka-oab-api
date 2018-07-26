@@ -195,7 +195,164 @@ module.exports = function(app) {
 
   })
 
-  app.post('/upload_doc', upload.any(), (req, res) => {
+  app.post('/upload_image', upload.any(), (req, res) => {
+
+    console.log('Iniciando extracao de imagens do PDF')
+    console.log(new Date())
+    console.log("==============================")
+
+    dadosNLU = []
+    dadosAnalise = []
+
+    console.log('variavel docSend:')
+    console.log(req.body.docSend)
+    console.log('==============================')
+    console.log('Arquivos de PDF via Upload:')
+    console.log(req.files)
+    console.log('==============================')
+
+    dadosFront = req.body.docSend
+
+    // Cria objeto JSON que sera usado para envio de requisicao
+    var reqWKS = {
+      ocr: []
+    }
+
+    // Guarda o nome original do arquivo sem extensao
+    var originalname = req.files[0].originalname
+    var originalnameRaw = originalname.split('.')[0]
+
+    var file = req.files[0].path
+
+    function processaOCRLoteV2(imagePath, reqWKS, callback){
+
+      // ### Inicia o procedimento de analise OCR ###
+
+      var ocr = require('./../ajax/gcloud_vision.js')
+
+      const promises = []
+
+      var promise = new Promise((resolve, reject) => {
+        
+        console.log('Iniciando OCR Google Cloud da imagem ' + imagePath)
+        
+        ocr.gCloudTextOCR(imagePath, 0, function(index, ocrData){
+
+          console.log(ocrData)
+
+          var originalnameRawNumber = originalnameRaw+'_' + (index + 1)
+          var newFileNameText = './uploads/'+originalnameRaw+'_' + (index + 1) + '.txt'
+
+          // ocrData = ocrData.replace(String.fromCharCode(10), '').replace(String.fromCharCode(13), '')
+          ocrData = ocrData.replace(/(\r\n|\n|\r)/gm," ");
+          ocrData = ocrData.replace(/\s+/g," ");
+
+          console.log("Salvando OCR em arquivo ...")
+          console.log(newFileNameText)
+          console.log("---------------------------------------------------")
+
+          fs.writeFile(newFileNameText, ocrData, function(err){
+
+            if(err) throw err
+
+            console.log('Extração de dados da imagem realizada com sucesso')
+            console.log(index)
+
+            var _ocrData = originalnameRawNumber+' |||| ' + ocrData
+            
+            reqWKS.ocr.push(_ocrData)
+
+            resolve()
+
+          })
+
+          
+        })
+
+      })
+        
+      promises.push(promise)
+
+      Promise.all(promises).then(() => {
+
+        console.log("=============================================")
+        console.log("All Promises finished!")
+        console.log("=============================================")
+        callback()
+        
+      })
+
+    }
+
+    // Efetua o processamento OCR das imagens
+    processaOCRLoteV2(file, reqWKS, function(){
+
+      console.log('Finalizado OCR Google Cloud')
+      console.log(new Date())
+      console.log("==============================")
+
+      if(reqWKS.ocr.length == 0){
+
+        res.send('Finalizado com OCR vazio')
+
+      }
+      else{
+
+        console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
+        // res.send('Finalizado com sucesso')
+        res.send(reqWKS)
+
+        reqWKS.ocr.forEach(function(ocrData, ocrIndex){
+
+          var url = 'https://dokia77.mybluemix.net/process'
+
+          var requestOptions = {
+            method: 'POST',
+            resolveWithFullResponse: true,
+            uri: url,
+            json: true,
+            body: {
+              "texto": ocrData
+            }
+          }
+
+          rp(requestOptions).then(function(response){
+
+            console.log('OCR index: ' + ocrIndex + ' => Requisicao a EndPoint enviado com sucesso!')
+            console.log(response.body)
+            console.log("===================================")
+            
+            if(ocrIndex == (reqWKS.ocr.length - 1)){
+
+              res.send('Finalizado com sucesso')
+
+            }
+
+          }).catch(function(err){
+
+            console.log('Erro EndPoint Handled !')
+            console.log(err.error)
+
+            if(ocrIndex == (reqWKS.ocr.length - 1)){
+
+              res.send('Finalizado com Erro')
+
+            }
+
+          })
+
+        })
+
+      }
+
+    })
+
+
+    
+    
+  })
+
+  app.post('/upload_doc_old', upload.any(), (req, res) => {
 
     console.log('Iniciando extracao de imagens do PDF')
     console.log(new Date())
@@ -453,207 +610,95 @@ module.exports = function(app) {
     
   })
 
-  app.post('/upload_image', upload.any(), (req, res) => {
+  app.post('/process_ocr', upload.any(), (req, res) => {
 
-    console.log('Iniciando extracao de imagens do PDF')
-    console.log(new Date())
-    console.log("==============================")
+    let _uuid = uuid.v4()
 
-    dadosNLU = []
-    dadosAnalise = []
-
-    console.log('variavel docSend:')
-    console.log(req.body.docSend)
-    console.log('==============================')
-    console.log('Arquivos de PDF via Upload:')
-    console.log(req.files)
-    console.log('==============================')
-
-    dadosFront = req.body.docSend
-
-    // Cria objeto JSON que sera usado para envio de requisicao
-    var reqWKS = {
-      ocr: []
-    }
-
-    // Guarda o nome original do arquivo sem extensao
-    var originalname = req.files[0].originalname
-    var originalnameRaw = originalname.split('.')[0]
-
-    var file = req.files[0].path
-
-    function processaOCRLoteV2(imagePath, reqWKS, callback){
-
-      // ### Inicia o procedimento de analise OCR ###
-
-      var ocr = require('./../ajax/gcloud_vision.js')
-
-      const promises = []
-
-      var promise = new Promise((resolve, reject) => {
-        
-        console.log('Iniciando OCR Google Cloud da imagem ' + imagePath)
-        
-        ocr.gCloudTextOCR(imagePath, 0, function(index, ocrData){
-
-          console.log(ocrData)
-
-          var originalnameRawNumber = originalnameRaw+'_' + (index + 1)
-          var newFileNameText = './uploads/'+originalnameRaw+'_' + (index + 1) + '.txt'
-
-          // ocrData = ocrData.replace(String.fromCharCode(10), '').replace(String.fromCharCode(13), '')
-          ocrData = ocrData.replace(/(\r\n|\n|\r)/gm," ");
-          ocrData = ocrData.replace(/\s+/g," ");
-
-          console.log("Salvando OCR em arquivo ...")
-          console.log(newFileNameText)
-          console.log("---------------------------------------------------")
-
-          fs.writeFile(newFileNameText, ocrData, function(err){
-
-            if(err) throw err
-
-            console.log('Extração de dados da imagem realizada com sucesso')
-            console.log(index)
-
-            var _ocrData = originalnameRawNumber+' |||| ' + ocrData
-            
-            reqWKS.ocr.push(_ocrData)
-
-            resolve()
-
-          })
-
-          
-        })
-
-      })
-        
-      promises.push(promise)
-
-      Promise.all(promises).then(() => {
-
-        console.log("=============================================")
-        console.log("All Promises finished!")
-        console.log("=============================================")
-        callback()
-        
-      })
-
-    }
-
-    // Efetua o processamento OCR das imagens
-    processaOCRLoteV2(file, reqWKS, function(){
-
-      console.log('Finalizado OCR Google Cloud')
-      console.log(new Date())
-      console.log("==============================")
-
-      if(reqWKS.ocr.length == 0){
-
-        res.send('Finalizado com OCR vazio')
-
-      }
-      else{
-
-        console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
-        // res.send('Finalizado com sucesso')
-        res.send(reqWKS)
-
-        reqWKS.ocr.forEach(function(ocrData, ocrIndex){
-
-          var url = 'https://dokia77.mybluemix.net/process'
-
-          var requestOptions = {
-            method: 'POST',
-            resolveWithFullResponse: true,
-            uri: url,
-            json: true,
-            body: {
-              "texto": ocrData
-            }
-          }
-
-          rp(requestOptions).then(function(response){
-
-            console.log('OCR index: ' + ocrIndex + ' => Requisicao a EndPoint enviado com sucesso!')
-            console.log(response.body)
-            console.log("===================================")
-            
-            if(ocrIndex == (reqWKS.ocr.length - 1)){
-
-              res.send('Finalizado com sucesso')
-
-            }
-
-          }).catch(function(err){
-
-            console.log('Erro EndPoint Handled !')
-            console.log(err.error)
-
-            if(ocrIndex == (reqWKS.ocr.length - 1)){
-
-              res.send('Finalizado com Erro')
-
-            }
-
-          })
-
-        })
-
-      }
-
-    })
-
-
-    
-    
-  })
-
-  app.post('/process_ocr', (req, res) => {
-
-    let _url = req.body.urlFile
-
-    let fileName = path.basename(_url)
-
-    // Efetua o download do PDF
-    let requestOptions = {
-      method: 'GET',
-      resolveWithFullResponse: true,
-      uri: _url,
-      encoding: "binary",
-      headers: {
-        'Content-type': 'application/pdf'
-      },
-      rejectUnauthorized: false
-    }
-
-    rp(requestOptions).then((response) => {
-
-      let body = response.body
-      let _uuid = uuid.v4()
-
-      // Salva em arquivo o PDF
-      let outputFilePath = './uploads/'+fileName
-
-      let writeStream = fs.createWriteStream(outputFilePath);
+    let promiseParsePost = new Promise((resolve, reject) => {
       
-      writeStream.write(body, 'binary')
+      let _url = req.body.urlFile
 
-      writeStream.on('finish', () => {
+      if(_url != undefined){
 
-        // Devolve o UUID para o cliente
-        res.send({_uuid})
-        
-        let dadosSolicitacao = req.body.dadosSolicitacao
+        let fileName = path.basename(_url)
 
-        // Cria objeto JSON que sera usado para envio de requisicao
-        var reqWKS = {
-          ocr: []
+        // Efetua o download do PDF
+        let requestOptions = {
+          method: 'GET',
+          resolveWithFullResponse: true,
+          uri: _url,
+          encoding: "binary",
+          headers: {
+            'Content-type': 'application/pdf'
+          },
+          rejectUnauthorized: false
         }
 
+        console.log('Efetuando Download de PDF ...')
+    
+        rp(requestOptions).then((response) => {
+    
+          console.log('Download finalizado !!!')
+
+          let body = response.body
+          
+          // Salva em arquivo o PDF
+          let outputFilePath = './uploads/'+fileName
+          
+          let writeStream = fs.createWriteStream(outputFilePath);
+
+          writeStream.write(body, 'binary')
+          writeStream.end()
+
+          writeStream.on("finish", () => {
+
+            console.log('Escrita do Stream Finalizado')
+
+            // Guarda o nome original do arquivo sem extensao
+            var originalname = path.parse(outputFilePath).name + '.pdf'
+            // var originalnameRaw = originalname.split('.')[0]
+
+            var newFileNamePDF = './uploads/'+_uuid+'/'+originalname
+            var newFolderName = './uploads/'+_uuid
+
+            // Cria o diretorio para guardar o PDF
+            fs.mkdir(newFolderName, (err) => {
+              
+              if(err) console.log(err)
+              
+              console.log('dir created')
+              
+              // Renomeia o arquivo para o novo diretorio
+              fs.rename(outputFilePath, newFileNamePDF,  (err) => {
+                
+                if (err) throw err;
+                
+                console.log('renamed complete');
+                resolve({newFileNamePDF, newFolderName})
+
+              })
+
+            })
+
+          })
+
+
+        })
+
+      }
+
+      if(req.files != undefined){
+
         // Guarda o nome original do arquivo sem extensao
-        var originalname = path.parse(outputFilePath).name + '.pdf'
+        var originalname = req.files[0].originalname
+        var originalnameRaw = originalname.split('.')[0]
+
+        fileNameUpload = originalnameRaw
+        
+        var file = req.files[0].path
+
+        // Guarda o nome original do arquivo sem extensao
+        // var originalname = path.parse(outputFilePath).name + '.pdf'
         // var originalnameRaw = originalname.split('.')[0]
 
         var newFileNamePDF = './uploads/'+_uuid+'/'+originalname
@@ -667,241 +712,210 @@ module.exports = function(app) {
           console.log('dir created')
           
           // Renomeia o arquivo para o novo diretorio
-          fs.rename(outputFilePath, newFileNamePDF,  (err) => {
-            
+          fs.rename(file, newFileNamePDF,  (err) => {
+        
             if (err) throw err;
             
             console.log('renamed complete');
-            
-            // ### Inicia o procedimento de conversão do PDF para formato de imagem ###
-
-            var m_pdf2img = require('./../ajax/pdf2img.js')
-
-            console.log('Iniciando a conversão do PDF para imagens')
-            console.log(newFileNamePDF)
-          
-            m_pdf2img.convertPdf2ImgV2(newFileNamePDF, newFolderName, (result) => {
-
-              console.log('Finalizado extracao de imagens do PDF')
-              console.log(new Date())
-              console.log("==============================")
-
-              // Efetua o processamento OCR das imagens
-              processaOCRLoteV2(result, reqWKS, _uuid, function(){
-
-                console.log('Finalizado OCR Google Cloud Vision')
-                console.log(new Date())
-                console.log("==============================")
-
-                if(reqWKS.ocr.length == 0){
-
-                  res.send(reqWKS)
-
-                }
-                else{
-
-                  let promisesOcrParser = reqWKS.ocr.map((ocrData, ocrIndex) => {
-                    if(ocrData.ocrData.length > 0){
-                      return m_ocrParser.ocrParser(ocrData)
-                    }
-                  })
-
-                  Promise.all(promisesOcrParser).then((ocrParseResult) => {
-
-                    console.log('Ocr Parser feito com sucesso')
-                    // console.log(JSON.stringify(ocrParseResult))
-                    // process.exit()
-
-                    // Identifica quais documentos foram identificados
-
-                    let docFound = []
-
-                    ocrParseResult.forEach((ocrParseData, ocrParseIndex) => {
-
-                      if(ocrParseData != undefined){
-
-                        let parseItens = ocrParseData.itens.filter((itemData) => {
-                          let name = itemData.name
-  
-                          if(docNames.indexOf(name) != -1){
-                            return true
-                          }
-  
-                        })
-  
-                        if(parseItens.length > 0){
-                          docFound.push(parseItens[0].name)
-                        }
-                      }
-
-                    })
-
-                    // Identifica quais documentos não foram identificados
-
-                    let docNotFound = docNames.filter((docName) => {
-                      return docFound.indexOf(docName) == -1
-                    })
-
-                    // Identifica se existe alguma pagina nao identificada
-                    let invalidPages = ocrParseResult.filter((ocrParseData) => {
-                      if(ocrParseData != undefined){
-                        return ocrParseData.itens.length == 0
-                      }
-                    })
-
-                    if (invalidPages.length != 0){
-
-                      console.log('Não foram identificados documentos em algumas paginas')
-                      
-                      // console.log(docFound)
-                      // console.log(docNotFound)
-                      // console.log invalidPages)
-                      // process.exit()
-
-                      // Salva os dados no MongoDb
-                      let reg = {
-                        uuid: _uuid,
-                        created: new Date(),
-                        ocr: reqWKS,
-                        status: 'documento inválido',
-                        ocrParser: {
-                         invalidPages, docFound, docNotFound
-                        }
-                      }
-
-                      db.collection('analise_ocr').insert(reg, (err, records) => {
-                        if(err) throw err
-                        console.log('Registro inserido no MongoDb')
-                      })
-
-                    }
-                    else{
-
-                      let faltaDoc = false
-
-                      if(docNotFound.length > 0){
-
-                        if(docNotFound.length == 1 && (docNotFound.indexOf('print tj') == -1 && docNotFound.indexOf('determinação judicial') == -1)){
-                          faltaDoc = true
-                        }
-                        else{
-                          faltaDoc = true
-                        }
-
-                      }
-
-                      if(faltaDoc){
-
-                        console.log('faltam documentos')
-                        
-                        // Salva os dados no MongoDb
-                        let reg = {
-                          uuid: _uuid,
-                          created: new Date(),
-                          ocr: reqWKS,
-                          status: 'documento não localizados',
-                          ocrParser: {
-                           invalidPages, docFound, docNotFound
-                          }
-                        }
-
-                        db.collection('analise_ocr').insert(reg, (err, records) => {
-                          if(err) throw err
-                          console.log('Registro inserido no MongoDb')
-                        })
-
-                      }
-                      else{
-                        
-                        let m_WKS = require('./../ajax/wks.js')
-  
-                        // Associa os nomes dos documentos no array principal
-                        reqWKS.ocr = reqWKS.ocr.map((ocrItem, ocrIndex) => {
-  
-                          let filter = ocrParseResult.filter((ocrParseItem) => {
-                            return ocrParseItem.resPageIndex == ocrItem.resPageIndex
-                          })
-  
-                          ocrItem.name = filter[0].itens[0].name
-  
-                          return ocrItem
-  
-                        })
-  
-                        console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
-  
-                        m_WKS.processWKSv4(reqWKS.ocr, (err) => {
-  
-                          console.log('Processamento WKS finalizado')
-                          console.log("*******************************")
-  
-                          console.log('Iniciando validação de regras')
-                          
-                          let arrayWKS = []
-  
-                          reqWKS.ocr.forEach((value, index) => {
-  
-                            arrayWKS.push(value.wks)
-  
-                          })
-  
-                          console.log('===================')
-                          console.log(dadosSolicitacao)
-                          console.log('===================')
-  
-                          m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao).then((validation)=>{
-  
-                            reqWKS.validation = validation
-  
-                            console.log('Validação de regras finalizada!')
-  
-                            // Salva os arquivos no Google Cloud Storage
-                            m_gCloudStorage.gCloudStorageSubmit(_uuid).then((urls) => {
-  
-                              // Salva os dados no MongoDb
-                              let reg = {
-                                uuid: _uuid,
-                                status: 'finish',
-                                created: new Date(),
-                                ocr: reqWKS,
-                                urls
-                              }
-  
-                              db.collection('analise_ocr').insert(reg, (err, records) => {
-                                if(err) throw err
-                                console.log('Registro inserido no MongoDb')
-                              })
-  
-  
-                            })
-  
-                          })
-  
-                          
-                        })
-                      }
-
-
-                    }
-
-
-                  })
-
-                }
-
-              })
-
-            })
+            resolve({newFileNamePDF, newFolderName})
 
           })
 
         })
 
-      })
-
-      writeStream.end()
+      }
 
     })
+
+    promiseParsePost.then((result) => {
+
+      let newFileNamePDF = result.newFileNamePDF
+      let newFolderName = result.newFolderName
+
+      // Devolve o UUID para o cliente
+      res.send({_uuid})
+      
+      let dadosSolicitacao = req.body.dadosSolicitacao
+
+      // Cria objeto JSON que sera usado para envio de requisicao
+      var reqWKS = {
+        ocr: []
+      }
+
+      var m_pdf2img = require('./../ajax/pdf2img.js')
+
+      console.log('Iniciando a conversão do PDF para imagens')
+      console.log(newFileNamePDF)
+
+      m_pdf2img.convertPdf2ImgV2(newFileNamePDF, newFolderName, (result) => {
+
+        console.log('Finalizado extracao de imagens do PDF')
+        console.log(new Date())
+        console.log("==============================")
+
+        // Efetua o processamento OCR das imagens
+        processaOCRLoteV2(result, reqWKS, _uuid, function(){
+
+          console.log('Finalizado OCR Google Cloud Vision')
+          console.log(new Date())
+          console.log("==============================")
+
+          if(reqWKS.ocr.length == 0){
+
+            res.send(reqWKS)
+
+          }
+          else{
+
+            let promisesOcrParser = reqWKS.ocr.map((ocrData, ocrIndex) => {
+              if(ocrData.ocrData.length > 0){
+                return m_ocrParser.ocrParser(ocrData)
+              }
+            })
+
+            Promise.all(promisesOcrParser).then((ocrParseResult) => {
+
+              console.log('Ocr Parser feito com sucesso')
+              // console.log(JSON.stringify(ocrParseResult))
+              // process.exit()
+
+              // Identifica quais documentos foram identificados
+
+              let docFound = []
+
+              ocrParseResult.forEach((ocrParseData, ocrParseIndex) => {
+
+                if(ocrParseData != undefined){
+
+                  let parseItens = ocrParseData.itens.filter((itemData) => {
+                    let name = itemData.name
+
+                    if(docNames.indexOf(name) != -1){
+                      return true
+                    }
+
+                  })
+
+                  if(parseItens.length > 0){
+                    docFound.push(parseItens[0].name)
+                  }
+                }
+
+              })
+
+              // Identifica quais documentos não foram identificados
+
+              let docNotFound = docNames.filter((docName) => {
+                return docFound.indexOf(docName) == -1
+              })
+
+              // Identifica se existe alguma pagina nao identificada
+              let invalidPages = ocrParseResult.filter((ocrParseData) => {
+                if(ocrParseData != undefined){
+                  return ocrParseData.itens.length == 0
+                }
+              })
+
+              let status = ''
+
+              if (invalidPages.length != 0){
+
+                console.log('Não foram identificados documentos em algumas paginas')
+
+                status = 'Existem documentos inválidos'
+
+              }
+              else{
+
+                status = 'finish'
+
+              }
+                
+                  
+              let m_WKS = require('./../ajax/wks.js')
+
+              // Associa os nomes dos documentos no array principal
+              reqWKS.ocr = reqWKS.ocr.map((ocrItem, ocrIndex) => {
+
+                let filter = ocrParseResult.filter((ocrParseItem) => {
+                  return ocrParseItem.resPageIndex == ocrItem.resPageIndex
+                })
+
+                ocrItem.name = filter[0].itens.length == 0 ? '' : filter[0].itens[0].name
+                
+                return ocrItem
+
+              })
+
+              console.log(reqWKS.ocr)
+
+              console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
+
+              m_WKS.processWKSv4(reqWKS.ocr, (err) => {
+
+                console.log('Processamento WKS finalizado')
+                console.log("*******************************")
+
+                console.log('Iniciando validação de regras')
+                
+                let arrayWKS = []
+
+                reqWKS.ocr.forEach((value, index) => {
+
+                  arrayWKS.push(value.wks)
+
+                })
+
+                console.log('===================')
+                console.log(dadosSolicitacao)
+                console.log('===================')
+
+                m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao).then((validation)=>{
+
+                  reqWKS.validation = validation
+
+                  console.log('Validação de regras finalizada!')
+
+                  // Salva os arquivos no Google Cloud Storage
+                  m_gCloudStorage.gCloudStorageSubmit(_uuid).then((urls) => {
+
+                    // Salva os dados no MongoDb
+                    let reg = {
+                      uuid: _uuid,
+                      status: status,
+                      created: new Date(),
+                      ocr: reqWKS,
+                      ocrParser: {
+                        invalidPages, docFound, docNotFound
+                      },
+                      urls
+                    }
+
+                    db.collection('analise_ocr').insert(reg, (err, records) => {
+                      if(err) throw err
+                      console.log('Registro inserido no MongoDb')
+                    })
+
+
+                  })
+
+                })
+
+                
+              })
+
+
+
+            })
+
+          }
+
+        })
+
+      })
+
+    })
+
     
   })
 

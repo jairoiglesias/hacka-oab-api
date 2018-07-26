@@ -1,67 +1,6 @@
 
-let documentWordKeys = [
-    {
-        name: 'guia',
-        mapKeys: [
-            {
-                keys: ['guia', 'número', 'documento', 'banco', 'valor', 'total', '´processo', 'vencimento', 'agência', 'código', 'pagador', 'autentica'],
-                percAcc: 80
-            },
-            {
-                keys: ['guia', 'recolhimento', 'pedido', 'nome', 'cpf', 'rg', 'processo', 'valor', 'total', 'código'],
-                percAcc: 80
-            },
-            {
-                keys: ['guia', 'processo', 'valor', 'total', 'código', 'autentica', 'número', 'série', 'emissão', 'desarquivamento'],
-                percAcc: 80
-            },
-            {
-                keys: ['guia', 'número', 'documento', 'banco', 'valor', 'vencimento', 'agência', 'código', 'pagador', 'autentica'],
-                percAcc: 80
-            },
-        ]
-    },
-    {
-        name: 'comprovante',
-        mapKeys: [
-            {
-                keys: ['comprovante', 'banco', 'pagamento', 'valor', 'barras', 'autentica', 'total'],
-                percAcc: 80
-            }
-        ]
-    },
-    {
-        name: 'petição',
-        mapKeys: [
-            {
-                keys: ['ação', 'execução', 'autos', 'deferimento', 'requerer'],
-                percAcc: 80
-            },
-            {
-                keys: ['ação', 'execução', 'processo', 'deferimento', 'requerer'],
-                percAcc: 80
-            }
-        ]
-    },
-    {
-        name: 'print tj',
-        mapKeys: [
-            {
-                keys: ['comarca', 'orgão', 'vara', 'processo', 'advogado', 'data', 'disponibilização', 'inclusão'],
-                percAcc: 80
-            }
-        ]
-    },
-    {
-        name: 'determinação judicial',
-        mapKeys: [
-            {
-                keys: ['processo', 'exequente', 'executado', 'intimação', 'valor'],
-                percAcc: 80
-            }
-        ]
-    }
-]
+
+let documentWordKeys = require('../data/ocr_parser_map_key')
 
 function ocrParser(ocr){
 

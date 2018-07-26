@@ -33,7 +33,7 @@ block content
                 
                 // Envia ajax para processar o upload
                 var promise = $.ajax({
-                    url: 'upload_doc',
+                    url: 'process_ocr',
                     type: 'POST',
                     data: formData,
                     contentType: false,
@@ -41,11 +41,14 @@ block content
                     processData: false
                 })
                 
-                promise.then(function (response) {
+                promise.then(function (result) {
                     
-                    console.log("============================")
-                    console.log(response)
-                    $('#ocr_result').text(response)
+                    //- console.log("============================")
+                    //- console.log(response)
+                    //- $('#ocr_result').text(response)
+
+                    lastUUID = result
+                    $('#ocr_result').text(JSON.stringify(result))
 
                 })
 

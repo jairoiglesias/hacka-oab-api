@@ -52,11 +52,12 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
 
       let promiseParseCloudant = new Promise((resolve, reject) => {
 
-        const result = resultView.rows.map(({value}) => {
+        let tamDadosSolicitacao = Object.keys(_dadosSolicitacao).length
+        let tamWks = wksResponse.length
+
+        resultView.rows.forEach(({value}, index) => {
 
           let promiseDadosSolicitacao = new Promise((resolve, reject) => {
-
-            let tam = Object.keys(_dadosSolicitacao).length
 
             // Recupera os ID de regra referentes aos dados de solicitação
             Object.keys(_dadosSolicitacao).forEach((solicData, solicIndex) => {
@@ -80,7 +81,13 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
 
               }
 
-              if(tam == (solicIndex + 1)){
+              // console.log('==========')
+              // console.log(tamDadosSolicitacao)
+              // console.log(solicIndex)
+              // console.log('==========')
+
+              if(tamDadosSolicitacao == (solicIndex + 1)){
+                
                 resolve()
               }
 
@@ -90,8 +97,6 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
           
           let promiseWks = new Promise((resolve, reject) => {
 
-            let tam = wksResponse.length
-
             wksResponse.forEach((wksData, wksIndex) => {
 
               if(wksData != undefined){
@@ -99,28 +104,36 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
                 let entities = wksData.entities
 
                 if(entities){
-
+                  
                   const [dbItem] = entities.filter(({type}) => type === value.title)
                   
-                  if (!dbItem) return null;
-
-                  const text = dbItem.text;
                   
-                  // return {
-                  //   idField: value._id,
-                  //   value: text
-                  // }
-
-                  inputs.push({
-                    idField: value._id,
-                    value: text
-                  })
+                  if (dbItem){
+                    const text = dbItem.text;
+                    
+                    // return {
+                    //   idField: value._id,
+                    //   value: text
+                    // }
+  
+                    inputs.push({
+                      idField: value._id,
+                      value: text
+                    })
+      
+                  }
 
                 }
 
               }
 
-              if(tam == (wksIndex + 1)){
+              console.log('==========')
+              // console.log(tamWks)
+              // console.log(wksIndex)
+              // console.log('==========')
+
+              if(tamWks == (wksIndex + 1)){
+                
                 resolve()
               }
               
