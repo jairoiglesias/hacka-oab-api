@@ -149,6 +149,10 @@ module.exports = function(app) {
     dest: 'uploads/' 
   })
 
+  app.get('/teste', (req, res) => {
+    res.send('teste')
+  })
+
   app.post('/teste_post', upload.any(), (req, res) => {
 
     // console.log(req.body)
@@ -836,14 +840,26 @@ module.exports = function(app) {
                   
               let m_WKS = require('./../ajax/wks.js')
 
+              console.log(reqWKS.ocr)
+              console.log('+++')
+
               // Associa os nomes dos documentos no array principal
               reqWKS.ocr = reqWKS.ocr.map((ocrItem, ocrIndex) => {
 
                 let filter = ocrParseResult.filter((ocrParseItem) => {
-                  return ocrParseItem.resPageIndex == ocrItem.resPageIndex
+                  
+                  if(ocrParseItem != undefined){
+                    return ocrParseItem.resPageIndex == ocrItem.resPageIndex
+                  }
+
                 })
 
-                ocrItem.name = filter[0].itens.length == 0 ? '' : filter[0].itens[0].name
+                if(filter.length == 0){
+                  ocrItem.name = ''
+                }
+                else{
+                  ocrItem.name = filter[0].itens.length == 0 ? '' : filter[0].itens[0].name
+                }
                 
                 return ocrItem
 
