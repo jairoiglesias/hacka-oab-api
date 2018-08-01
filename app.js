@@ -36,7 +36,7 @@ app.use(function(req, res, next) {
 // app.use(session({ resave: true, saveUninitialized: true, secret: 'uwotm8' }));
 
 // Auto-Load de recursos (Parecido com a ideia do Auto-Load do PHP)
-load('ajax').then('routes').then('assets').into(app);
+load('ajax').then('routes').into(app);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

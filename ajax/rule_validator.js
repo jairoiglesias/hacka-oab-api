@@ -2,7 +2,8 @@ const Cloudant = require('@cloudant/cloudant');
 const { post } = require('axios')
 const { promisify } = require('util')
 
-const VALIDATOR_URL = 'https://validator-dokia.mybluemix.net/api/validator'
+const VALIDATOR_URL = 'https://dokia-rules.mybluemix.net/api/validator'
+
 const ID_RULE = "90ad561435df4489b29e9fa8b4540315"
 
 let MOCK_SOLICITACAO = {"id_solicitacao_cliente":"56098356","carteira":"Santander NPL1","origem":"A","agencia_fornecedor":"Ferreira e Chagas Advogados","devedor":"DEOCLECIO APARECIDO PARAIZO","nro_operacao_sistema":"33537205","nro_operacao":"620334073010263","setor":"PCJ","tipo":"GASTO","autorizacao":"","nro_despesa":"","data_gasto":"2018-02-07","tipo_gasto":"NC_Correios","moeda":"R$","valor":"19.70","status_pagamento":"Carregado","data_aprovacao":"2018-03-20","id_juizo":"","id_reclamo":"\r\n","cnpj":"11111111111","razao_social":"santander"}

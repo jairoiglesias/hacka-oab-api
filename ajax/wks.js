@@ -277,12 +277,15 @@ function processWKSv4(ocr, cb){
 
     ocr.map(function(ocrData) {
       
-      var wksCur = result.filter((page)=>{
-        return page.pageIndex == ocrData.resPageIndex
-      })
-
-      if(wksCur.length != 0){
-        ocrData.wks = wksCur[0].NLU
+      if(result.length > 0){
+        
+        var wksCur = result.filter((page)=>{
+          return page.pageIndex == ocrData.resPageIndex
+        })
+  
+        if(wksCur.length != 0){
+          ocrData.wks = wksCur[0].NLU
+        }
       }
       
       return ocrData
