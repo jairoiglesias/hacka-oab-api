@@ -753,7 +753,7 @@ module.exports = function(app) {
       console.log('Iniciando a conversão do PDF para imagens')
       console.log(newFileNamePDF)
 
-      m_pdf2img.convertPdf2ImgV2(newFileNamePDF, newFolderName, (result) => {
+      m_pdf2img.convertPdf2ImgV3(newFileNamePDF, newFolderName, (result) => {
 
         console.log('Finalizado extracao de imagens do PDF')
         console.log(new Date())
@@ -840,9 +840,6 @@ module.exports = function(app) {
                   
               let m_WKS = require('./../ajax/wks.js')
 
-              console.log(reqWKS.ocr)
-              console.log('+++')
-
               // Associa os nomes dos documentos no array principal
               reqWKS.ocr = reqWKS.ocr.map((ocrItem, ocrIndex) => {
 
@@ -873,6 +870,11 @@ module.exports = function(app) {
 
                 console.log('Processamento WKS finalizado')
                 console.log("*******************************")
+
+                if(err){
+                  console.log('WKS ERROR')
+                  status = 'WKS erro'
+                }  
 
                 console.log('Iniciando validação de regras')
                 
@@ -919,10 +921,8 @@ module.exports = function(app) {
                   })
 
                 })
-
                 
               })
-
 
 
             })

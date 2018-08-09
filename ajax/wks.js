@@ -271,28 +271,37 @@ function processWKSv4(ocr, cb){
     let result = wksResponse.body
 
     console.log('##############################################')
+    console.log(wksResponse.statusCode)
     console.log(result)
     console.log(result.length)
     console.log('##############################################')
 
-    ocr.map(function(ocrData) {
-      
-      if(result.length > 0){
+    if(wksResponse.statusCode == 200){
+
+      ocr.map(function(ocrData) {
         
-        var wksCur = result.filter((page)=>{
-          return page.pageIndex == ocrData.resPageIndex
-        })
-  
-        if(wksCur.length != 0){
-          ocrData.wks = wksCur[0].NLU
+        if(result.length > 0){
+          
+          var wksCur = result.filter((page)=>{
+            return page.pageIndex == ocrData.resPageIndex
+          })
+    
+          if(wksCur.length != 0){
+            ocrData.wks = wksCur[0].NLU
+          }
         }
-      }
-      
-      return ocrData
+        
+        return ocrData
+  
+      })
 
-    })
+      cb()
+    }
+    else{
 
-    cb()
+      cb('erro')
+    }
+
 
   }).catch(function(err){
 
