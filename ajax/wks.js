@@ -250,8 +250,8 @@ function processWKSv4(ocr, cb){
 
   })
 
-  let urlWKS = 'https://node-red-dokia.mybluemix.net/classifica/v2'
-
+  let urlWKS = 'https://gama-dokia-ai-backend.mybluemix.net/classifica/v2'
+  
   let requestOptions = {
     method: 'POST',
     resolveWithFullResponse: true,

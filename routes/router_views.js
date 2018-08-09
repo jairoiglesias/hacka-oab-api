@@ -874,7 +874,7 @@ module.exports = function(app) {
                 if(err){
                   console.log('WKS ERROR')
                   status = 'WKS erro'
-                }  
+                }
 
                 console.log('Iniciando validação de regras')
                 
