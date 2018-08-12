@@ -6,6 +6,7 @@ var path = require('path')
 var url = require('url')
 var rp = require('request-promise').defaults({simple : false})
 
+// Carrega modulos customizados
 let m_ocrParser = require('./../ajax/ocr_parser.js')
 let m_gCloudStorage = require('./../ajax/gcloud_storage')
 let m_ruleValidator = require('./../ajax/rule_validator')
@@ -618,6 +619,7 @@ module.exports = function(app) {
 
     let _uuid = uuid.v4()
 
+    // Analisa o tipo de POST submetido
     let promiseParsePost = new Promise((resolve, reject) => {
       
       let _url = req.body.urlFile
@@ -733,6 +735,7 @@ module.exports = function(app) {
 
     promiseParsePost.then((result) => {
 
+      // Guarda o SocketID
       let socketId = req.body.socket_id
 
       let newFileNamePDF = result.newFileNamePDF
@@ -938,6 +941,333 @@ module.exports = function(app) {
     
   })
 
+  app.post('/process_ocr_v2', upload.any(), (req, res) => {
+
+    let _uuid = uuid.v4()
+
+    // Analisa o tipo de POST submetido
+    let promiseParsePost = new Promise((resolve, reject) => {
+      
+      let _url = req.body.urlFile
+
+      if(_url != undefined){
+
+        let fileName = path.basename(_url)
+
+        // Efetua o download do PDF
+        let requestOptions = {
+          method: 'GET',
+          resolveWithFullResponse: true,
+          uri: _url,
+          encoding: "binary",
+          headers: {
+            'Content-type': 'application/pdf'
+          },
+          rejectUnauthorized: false
+        }
+
+        console.log('Efetuando Download de PDF ...')
+    
+        rp(requestOptions).then((response) => {
+    
+          console.log('Download finalizado !!!')
+
+          let body = response.body
+          
+          // Salva em arquivo o PDF
+          let outputFilePath = './uploads/'+fileName
+          
+          let writeStream = fs.createWriteStream(outputFilePath);
+
+          writeStream.write(body, 'binary')
+          writeStream.end()
+
+          writeStream.on("finish", () => {
+
+            console.log('Escrita do Stream Finalizado')
+
+            // Guarda o nome original do arquivo sem extensao
+            var originalname = path.parse(outputFilePath).name + '.pdf'
+            // var originalnameRaw = originalname.split('.')[0]
+
+            var newFileNamePDF = './uploads/'+_uuid+'/'+originalname
+            var newFolderName = './uploads/'+_uuid
+
+            // Cria o diretorio para guardar o PDF
+            fs.mkdir(newFolderName, (err) => {
+              
+              if(err) console.log(err)
+              
+              console.log('dir created')
+              
+              // Renomeia o arquivo para o novo diretorio
+              fs.rename(outputFilePath, newFileNamePDF,  (err) => {
+                
+                if (err) throw err;
+                
+                console.log('renamed complete');
+                resolve({newFileNamePDF, newFolderName})
+
+              })
+
+            })
+
+          })
+
+
+        })
+
+      }
+
+      if(req.files != undefined){
+
+        // Guarda o nome original do arquivo sem extensao
+        var originalname = req.files[0].originalname
+        var originalnameRaw = originalname.split('.')[0]
+
+        fileNameUpload = originalnameRaw
+        
+        var file = req.files[0].path
+
+        // Guarda o nome original do arquivo sem extensao
+        // var originalname = path.parse(outputFilePath).name + '.pdf'
+        // var originalnameRaw = originalname.split('.')[0]
+
+        var newFileNamePDF = './uploads/'+_uuid+'/'+originalname
+        var newFolderName = './uploads/'+_uuid
+
+        // Cria o diretorio para guardar o PDF
+        fs.mkdir(newFolderName, (err) => {
+          
+          if(err) console.log(err)
+          
+          console.log('dir created')
+          
+          // Renomeia o arquivo para o novo diretorio
+          fs.rename(file, newFileNamePDF,  (err) => {
+        
+            if (err) throw err;
+            
+            console.log('renamed complete');
+            resolve({newFileNamePDF, newFolderName})
+
+          })
+
+        })
+
+      }
+
+    })
+
+    promiseParsePost.then((result) => {
+
+      // Guarda o SocketID
+      let socketId = req.body.socket_id
+
+      let newFileNamePDF = result.newFileNamePDF
+      let newFolderName = result.newFolderName
+
+      // Devolve o UUID para o cliente
+      res.send({_uuid})
+      
+      let dadosSolicitacao = req.body.dadosSolicitacao
+
+      // Cria objeto JSON que sera usado para envio de requisicao
+      var reqWKS = {
+        ocr: []
+      }
+
+      console.log(newFileNamePDF)
+      console.log('Salvando o PDF no Google Cloud Storage')
+      
+      let pdfBaseName = path.basename(newFileNamePDF)
+      
+      // Salva o PDF no Google Cloud Storage
+      m_gCloudStorage.gCloudStorageSubmit(_uuid).then((urls) => {
+
+        // Efetua o processamento OCR diretamente do PDF no Storage
+        var m_gCloudVision = require('./../ajax/gcloud_vision.js')
+        
+        console.log('Iniciando extração de texto do PDF')
+
+        m_gCloudVision.gCloudTextOCRFromPDF(_uuid, pdfBaseName).then((result) => {
+
+          console.log('Google Cloud Vision PDF Extraction Success!')
+          console.log(result)
+
+          if(result.ocr.length == 0){
+
+            res.send(reqWKS)
+
+          }
+          else{
+
+            reqWKS.ocr = result.ocr
+
+            // Prepara a execução do OCR Parser para analisar os textos
+            let promisesOcrParser = reqWKS.ocr.map((ocrItem, ocrIndex) => {
+              if(ocrItem.ocrData.length > 0){
+                return m_ocrParser.ocrParser(ocrItem)
+              }
+            })
+
+            Promise.all(promisesOcrParser).then((ocrParseResult) => {
+
+              console.log('Ocr Parser feito com sucesso')
+              console.log(JSON.stringify(ocrParseResult))
+
+              // Identifica quais documentos foram identificados
+
+              let docFound = []
+
+              ocrParseResult.forEach((ocrParseData, ocrParseIndex) => {
+
+                if(ocrParseData != undefined){
+
+                  let parseItens = ocrParseData.itens.filter((itemData) => {
+                    let name = itemData.name
+
+                    if(docNames.indexOf(name) != -1){
+                      return true
+                    }
+
+                  })
+
+                  if(parseItens.length > 0){
+                    docFound.push(parseItens[0].name)
+                  }
+                }
+
+              })
+
+              // Identifica quais documentos não foram identificados
+
+              let docNotFound = docNames.filter((docName) => {
+                return docFound.indexOf(docName) == -1
+              })
+
+              // Identifica se existe alguma pagina nao identificada
+              let invalidPages = ocrParseResult.filter((ocrParseData) => {
+                if(ocrParseData != undefined){
+                  return ocrParseData.itens.length == 0
+                }
+              })
+
+              let status = ''
+
+              if (invalidPages.length != 0){
+
+                console.log('Não foram identificados documentos em algumas paginas')
+
+                status = 'Existem documentos inválidos'
+
+              }
+              else{
+
+                status = 'finish'
+
+              }                
+                  
+              let m_WKS = require('./../ajax/wks.js')
+
+              // Associa os nomes dos documentos no array principal
+              reqWKS.ocr = reqWKS.ocr.map((ocrItem, ocrIndex) => {
+
+                let filter = ocrParseResult.filter((ocrParseItem) => {
+                  
+                  if(ocrParseItem != undefined){
+                    return ocrParseItem.resPageIndex == ocrItem.resPageIndex
+                  }
+
+                })
+
+                if(filter.length == 0){
+                  ocrItem.name = ''
+                }
+                else{
+                  ocrItem.name = filter[0].itens.length == 0 ? '' : filter[0].itens[0].name
+                }
+                
+                return ocrItem
+
+              })
+
+              console.log(reqWKS.ocr)
+
+              // DEBUG
+              // console.log('finalizado')
+              // res.app.io.to(socketId).emit('msg', 'finish')
+
+              console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
+
+              m_WKS.processWKSv4(reqWKS.ocr, (err) => {
+
+                console.log('Processamento WKS finalizado')
+                console.log("*******************************")
+
+                if(err){
+                  console.log('WKS ERROR')
+                  status = 'WKS erro'
+                }
+
+                console.log('Iniciando validação de regras')
+                
+                let arrayWKS = []
+
+                reqWKS.ocr.forEach((value, index) => {
+
+                  arrayWKS.push(value.wks)
+
+                })
+
+                console.log('===================')
+                console.log(dadosSolicitacao)
+                console.log('===================')
+
+                m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao).then((validation)=>{
+
+                  reqWKS.validation = validation
+
+                  console.log('Validação de regras finalizada!')
+
+                  // Salva os dados no MongoDb
+                  let reg = {
+                    uuid: _uuid,
+                    status: status,
+                    created: new Date(),
+                    ocr: reqWKS,
+                    ocrParser: {
+                      invalidPages, docFound, docNotFound
+                    },
+                    urls
+                  }
+
+                  db.collection('analise_ocr').insert(reg, (err, records) => {
+                    if(err) throw err
+                    console.log('Registro inserido no MongoDb')
+                    res.app.io.to(socketId).emit('msg', 'finish')
+                  })
+
+                })
+                
+              })
+
+
+            })
+
+          }
+
+
+        })
+
+
+      })
+
+    })
+
+    
+  })
+
   app.get('/get_image_page_old/:uuid/:index', (req, res) => {
 
     var uuid = req.params.uuid
@@ -965,7 +1295,7 @@ module.exports = function(app) {
 
   })
 
-  app.get('/get_image_page/:uuid/:index', (req, res) => {
+  app.get('/get_image_page_old/:uuid/:index', (req, res) => {
 
     var uuid = req.params.uuid
     var index = req.params.index
@@ -1022,6 +1352,68 @@ module.exports = function(app) {
         }
 
       }
+
+    })
+
+  })
+
+  app.get('/get_pdf/:uuid/', (req, res) => {
+
+    var uuid = req.params.uuid
+
+    db.collection('analise_ocr').findOne({"uuid": uuid}, (err, records) => {
+
+      if(err) throw err
+
+      if(records == null){
+        res.send('sem urls')
+      }
+      else{
+
+        let urls = records.urls
+  
+        if(urls == undefined){
+          res.send('Não existe storage de arquivos para este UUID')
+        }
+        else{
+  
+          let item = urls.filter((urlData) => {
+            return urlData.fileItem.indexOf('pdf') != -1
+          })
+  
+          if(item.length == 0){
+            res.send('Não existe imagem válida para esta pagina!')
+          }
+          else{
+  
+            let url = item[0].url
+    
+            // Efetua o download do PDF
+            let requestOptions = {
+              method: 'GET',
+              resolveWithFullResponse: true,
+              uri: url,
+              encoding: "binary",
+              // headers: {
+              //   'Content-Type': 'image/png'
+              // },
+              // rejectUnauthorized: false
+            }
+    
+            rp(requestOptions).then((response) => {
+    
+              let body = response.body
+    
+              res.writeHead(200, {'Content-Type': 'application/pdf' });
+              res.end(body, 'binary');
+    
+            })
+  
+          }
+  
+        }
+
+      }      
 
     })
 

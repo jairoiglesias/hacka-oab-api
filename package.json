@@ -1,9 +1,10 @@
 {
-  "name": "cbox",
+  "name": "dokia",
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node ./bin/www",
+    "dev": "nodemon ./bin/www"
   },
   "dependencies": {
     "@cloudant/cloudant": "^2.3.0",

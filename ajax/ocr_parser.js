@@ -7,6 +7,7 @@ function ocrParser(ocr){
     return new Promise((resolve, reject) => {
 
         let _ocr = ocr.ocrData.toLowerCase()
+
         let maxPerc = 0
         let maxItemPerc = []
 
@@ -15,7 +16,7 @@ function ocrParser(ocr){
             wordData.mapKeys.some((mapKeyData, mapKeyIndex) => {
 
                 let keysFound = mapKeyData.keys.filter((key) => {
-                    _key = ' ' + key + ''
+                    _key = '' + key + ''
                     return _ocr.indexOf(_key) != -1
                 })
 
@@ -23,6 +24,10 @@ function ocrParser(ocr){
                 let tamWordKeys = mapKeyData.keys.length
 
                 let perc = (tamKeyFound/tamWordKeys) * 100
+
+                // console.log(ocr.resPageIndex)
+                // console.log('mapKeyIndex: ' + mapKeyIndex)
+                // console.log(wordData.name + ' => ' + perc)
 
                 if(perc >= mapKeyData.percAcc){
 

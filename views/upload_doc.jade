@@ -2,144 +2,394 @@ extends header
 
 block content
 
-  style(type="text/css").
+    style(type="text/css").
 
   
-  script(type="text/javascript").
+    script(type="text/javascript").
   
-    $(document).ready(function(){
+        $(document).ready(function(){
 
-        const socket = io()
+            const socket = io()
 
-        socket.on('connect', () => {
-            alertify.success('Web Socket Conectado')
-            console.log(socket)
-        })
+            socket.on('connect', () => {
+                alertify.success('Web Socket Conectado')
+                console.log(socket)
+            })
 
-        socket.on('msg', (msg) => {
-            if(msg == 'finish'){
-                alertify.success('Processamento Finalizado')
-                mostraStatus()
-            }
-        })
+            socket.on('msg', (msg) => {
+                if(msg == 'finish'){
+                    console.log('SOCKET IO FINALIZADO')
+                    alertify.success('Processamento Finalizado')
+                    mostraStatus()
+                }
+            })
 
-        var lastUUID = ''
+            var lastUUID = ''
 
-        $('#frm_upload_doc').submit(function(e){
+            $("#file_doc").change(function() {
 
-            e.preventDefault()
-
-            // Recupera os arquivos do input file
-            var file = $('#file_doc')[0].files[0]
-
-            if(file == undefined){
-                alertify.error('Selecione um arquivo JPEG/TIFF')
-            }
-            else{
-
-                alertify.success('Iniciando processamento OCR', 10)
-
-                // Monta um objeto FormData com os arquivos
-                var formData = new FormData();
-                formData.append('file_doc', file);
-                formData.append('socket_id', socket.id)
-
-                $('#ocr_result').text('Processando OCR ...')
+                var files = [];
+                for (var i = 0; i < $(this).get(0).files.length; ++i) {
+                    files.push($(this).get(0).files[i].name);
+                }
                 
-                // Envia ajax para processar o upload
+                $('#files').html('')
+                files.forEach((value, index) => {
+                    $('#files').append('<p>'+value+'</p>')
+                })
+
+            })
+
+            //- $('#btn_enviar').click((e)=> {
+            //-     e.preventDefault()
+
+            //-     var promises = [];
+            //-     var objFiles = $('#file_doc').get(0).files
+
+            //-     var lenFiles = objFiles.length
+
+            //-     for (var i = 0; i < lenFiles; ++i) {
+
+            //-         let file = objFiles[i].name
+
+            //-         // Monta um objeto FormData com os arquivos
+            //-         let formData = new FormData();
+            //-         formData.append('file_doc', file);
+            //-         formData.append('socket_id', socket.id)
+                    
+            //-         // Envia ajax para processar o upload
+            //-         let promise = $.ajax({
+            //-             url: 'process_ocr',
+            //-             type: 'POST',
+            //-             data: formData,
+            //-             contentType: false,
+            //-             enctype: 'multipart/form-data',
+            //-             processData: false
+            //-         })
+
+            //-         files.push(promise)
+            //-     }
+
+            //-     Promise.all(promises).then(() => {
+
+            //-         console.log('All Uploads Finished')
+
+            //-     })
+
+            //- })
+
+            
+
+            $('#frm_upload_doc').submit(function(e){
+
+                e.preventDefault()
+
+                // Recupera os arquivos do input file
+                var file = $('#file_doc')[0].files[0]
+
+                if(file == undefined){
+                    alertify.error('Selecione um arquivo JPEG/TIFF')
+                }
+                else{
+
+                    alertify.success('Iniciando processamento OCR', 10)
+
+                    // Monta um objeto FormData com os arquivos
+                    var formData = new FormData();
+                    formData.append('file_doc', file);
+                    formData.append('socket_id', socket.id)
+
+                    $('#ocr_result').text('Processando OCR ...')
+                    
+                    // Envia ajax para processar o upload
+                    var promise = $.ajax({
+                        url: 'process_ocr',
+                        type: 'POST',
+                        data: formData,
+                        contentType: false,
+                        enctype: 'multipart/form-data',
+                        processData: false
+                    })
+                    
+                    promise.then(function (result) {
+                        
+                        //- console.log("============================")
+                        //- console.log(response)
+                        //- $('#ocr_result').text(response)
+
+                        lastUUID = result
+                        $('#ocr_result').text(JSON.stringify(result))
+
+                    })
+
+                }
+
+            })
+
+            $('#frm_upload_doc_v2').submit(function(e){
+
+                e.preventDefault()
+
+                // Recupera os arquivos do input file
+                var file = $('#file_doc_v2')[0].files[0]
+
+                if(file == undefined){
+                    alertify.error('Selecione um arquivo JPEG/TIFF')
+                }
+                else{
+
+                    alertify.success('Iniciando processamento OCR', 10)
+
+                    // Monta um objeto FormData com os arquivos
+                    var formData = new FormData();
+                    formData.append('file_doc_v2', file);
+                    formData.append('socket_id', socket.id)
+
+                    $('#ocr_result').text('Processando OCR ...')
+                    
+                    // Envia ajax para processar o upload
+                    var promise = $.ajax({
+                        url: 'process_ocr_v2',
+                        type: 'POST',
+                        data: formData,
+                        contentType: false,
+                        enctype: 'multipart/form-data',
+                        processData: false
+                    })
+                    
+                    promise.then(function (result) {
+                        
+                        //- console.log("============================")
+                        //- console.log(response)
+                        //- $('#ocr_result').text(response)
+
+                        lastUUID = result
+                        $('#ocr_result').text(JSON.stringify(result))
+
+                    })
+
+                }
+
+            })
+
+            $('#frm_process_ocr').submit(function(e){
+
+                e.preventDefault()
+
+                var data = $(this).serialize();
+
+                console.log(data)
+
                 var promise = $.ajax({
                     url: 'process_ocr',
                     type: 'POST',
-                    data: formData,
-                    contentType: false,
-                    enctype: 'multipart/form-data',
-                    processData: false
+                    data: data
                 })
-                
-                promise.then(function (result) {
-                    
-                    //- console.log("============================")
-                    //- console.log(response)
-                    //- $('#ocr_result').text(response)
 
+                promise.then(function(result){
                     lastUUID = result
                     $('#ocr_result').text(JSON.stringify(result))
-
                 })
 
+            })
+
+            $('#btn_consultar_status').click(function(e){
+
+                e.preventDefault()
+
+                mostraStatus()
+
+            })
+
+            function mostraStatus(e){
+
+                let _url = 'status_ocr/'+lastUUID._uuid
+
+                var promise = $.ajax({
+                    url: _url,
+                    type: 'GET'
+                })
+
+                promise.then(function(result){
+                    $('#status_ocr').text(JSON.stringify(result, undefined, 2))
+
+                    let url =  'get_pdf/' + lastUUID._uuid
+
+                    //- console.log(url)
+
+                    $.ajax({
+                        url: url,
+                        method: "GET",
+                        contentType: false,
+                        processData: false,
+                         xhrFields: {
+                            responseType: 'blob'
+                        },
+                        //- headers:{
+                        //-     'Content-Type':'application/pdf'
+                        //- }
+                    }).then(function(data) {
+
+                        if(data.length < 100){
+                            console.log('sem urls')
+                        }
+                        else{
+
+                            console.log(data)
+
+                            var blob=new Blob([data], { type: 'application/pdf' })
+
+                            var fileURL = URL.createObjectURL(blob);
+                            showPDF(fileURL)
+
+                            //- window.open(fileURL);
+
+                        }
+                    });
+
+                })
             }
 
+
+            // ### PDF JS ###################################
+
+            var __PDF_DOC,
+            __CURRENT_PAGE,
+            __TOTAL_PAGES,
+            __PAGE_RENDERING_IN_PROGRESS = 0,
+            __CANVAS = $('#pdf-canvas').get(0),
+            __CANVAS_CTX = __CANVAS.getContext('2d');
+
+            function showPDF(pdf_url) {
+                $("#pdf-loader").show();
+
+                PDFJS.getDocument({ url: pdf_url }).then(function(pdf_doc) {
+                    __PDF_DOC = pdf_doc;
+                    __TOTAL_PAGES = __PDF_DOC.numPages;
+                    
+                    // Hide the pdf loader and show pdf container in HTML
+                    $("#pdf-loader").hide();
+                    $("#pdf-contents").show();
+                    $("#pdf-total-pages").text(__TOTAL_PAGES);
+
+                    // Show the first page
+                    showPage(1);
+                }).catch(function(error) {
+                    // If error re-show the upload button
+                    $("#pdf-loader").hide();
+                    $("#upload-button").show();
+                    
+                    alert(error.message);
+                });;
+            }
+
+            function showPage(page_no) {
+                __PAGE_RENDERING_IN_PROGRESS = 1;
+                __CURRENT_PAGE = page_no;
+
+                // Disable Prev & Next buttons while page is being loaded
+                $("#pdf-next, #pdf-prev").attr('disabled', 'disabled');
+
+                // While page is being rendered hide the canvas and show a loading message
+                $("#pdf-canvas").hide();
+                $("#page-loader").show();
+
+                // Update current page in HTML
+                $("#pdf-current-page").text(page_no);
+                
+                // Fetch the page
+                __PDF_DOC.getPage(page_no).then(function(page) {
+                    // As the canvas is of a fixed width we need to set the scale of the viewport accordingly
+                    var scale_required = __CANVAS.width / page.getViewport(1).width;
+
+                    // Get viewport of the page at required scale
+                    var viewport = page.getViewport(scale_required);
+
+                    // Set canvas height
+                    __CANVAS.height = viewport.height;
+
+                    var renderContext = {
+                        canvasContext: __CANVAS_CTX,
+                        viewport: viewport
+                    };
+                    
+                    // Render the page contents in the canvas
+                    page.render(renderContext).then(function() {
+                        __PAGE_RENDERING_IN_PROGRESS = 0;
+
+                        // Re-enable Prev & Next buttons
+                        $("#pdf-next, #pdf-prev").removeAttr('disabled');
+
+                        // Show the canvas and hide the page loader
+                        $("#pdf-canvas").show();
+                        $("#page-loader").hide();
+                    });
+                });
+            }
+
+            // Previous page of the PDF
+            $("#pdf-prev").on('click', function() {
+                if(__CURRENT_PAGE != 1)
+                    showPage(--__CURRENT_PAGE);
+            });
+
+            // Next page of the PDF
+            $("#pdf-next").on('click', function() {
+                if(__CURRENT_PAGE != __TOTAL_PAGES)
+                    showPage(++__CURRENT_PAGE);
+            });
+
+            
         })
-
-        $('#frm_process_ocr').submit(function(e){
-
-            e.preventDefault()
-
-            var data = $(this).serialize();
-
-            console.log(data)
-
-            var promise = $.ajax({
-                url: 'process_ocr',
-                type: 'POST',
-                data: data
-            })
-
-            promise.then(function(result){
-                lastUUID = result
-                $('#ocr_result').text(JSON.stringify(result))
-            })
-
-        })
-
-        $('#btn_consultar_status').click(function(e){
-
-            e.preventDefault()
-
-            mostraStatus()
-
-        })
-
-        function mostraStatus(e){
-
-            let _url = 'status_ocr/'+lastUUID._uuid
-
-            var promise = $.ajax({
-                url: _url,
-                type: 'GET'
-            })
-
-            promise.then(function(result){
-                $('#status_ocr').text(JSON.stringify(result, undefined, 2))
-            })
-        }
-      
-    })  
-
     
-  div(class='container')
-    h2 Modulo de Teste - OCR Google Cloud Vision
-    hr
-    //- a(class='btn btn-info' href='get_all_files'  target='_blank') Listar Urls dos Textos
-    div(style="float:left;width:45%")
-        h3 Metodo Upload do Computador
-        form(method="post" id="frm_upload_doc" enctype="multipart/form-data")
-            //- input(class='form-control' type='file' name='file_doc' id='file_doc' accept=".jpg,.jpeg,.png,.tiff")
-            input(class='form-control' type='file' name='file_doc' id='file_doc' accept=".pdf")
+    div(id="app")
+        div(class="container")
+            h2 Modulo de Teste - OCR Google Cloud Vision
+            hr
+            //- a(class='btn btn-info' href='get_all_files'  target='_blank') Listar Urls dos Textos
+            div(style="float:left;width:45%")
+                h3 Metodo Upload do Computador
+                form(method="post" id="frm_upload_doc" enctype="multipart/form-data")
+                    //- input(class='form-control' type='file' name='file_doc' id='file_doc' accept=".jpg,.jpeg,.png,.tiff")
+                    input(class='form-control' type='file' name='file_doc' id='file_doc' accept=".pdf")
+                    br
+                    input(class='btn btn-success' type='submit' value='enviar' id='btn_enviar')
+                br
+                div(id="files")
+                br
+                h3 Metodo Upload do Computador (Nova Versão)
+                form(method="post" id="frm_upload_doc_v2" enctype="multipart/form-data")
+                    //- input(class='form-control' type='file' name='file_doc' id='file_doc' accept=".jpg,.jpeg,.png,.tiff")
+                    input(class='form-control' type='file' name='file_doc_v2' id='file_doc_v2' accept=".pdf")
+                    br
+                    input(class='btn btn-success' type='submit' value='enviar' id='btn_enviar_v2')
+                br
+                div(id="files")
+            div(style="float:right;width:50%")
+                h3 Metodo por URL Externa
+                form(method="post" id="frm_process_ocr")
+                    input(class="form-control" type="text" id="urlFile" name="urlFile")
+                    br
+                    input(class='btn btn-success' type='submit' value='enviar' id='btn_enviar_ocr')
+                    br
+            div(style="clear:both")
             br
-            input(class='btn btn-success' type='submit' value='enviar' id='btn_enviar')
-    div(style="float:right;width:50%")
-        h3 Metodo por URL Externa
-        form(method="post" id="frm_process_ocr")
-            input(class="form-control" type="text" id="urlFile" name="urlFile")
+            hr
+            h3 PDF.js para visualizacao do documento
+            div(id="pdf-main-container")
+                div(id="pdf-loader") Loading document ...
+                div(id="pdf-contents")
+                    div(id="pdf-meta")
+                        div(id="pdf-buttons")
+                            button(id="pdf-prev") Previous
+                            button(id="pdf-next") Next
+                        div(id="page-count-container") Page 
+                            div(id="pdf-current-page") of 
+                                div(id="pdf-total-pages")
+                    canvas(id="pdf-canvas" width="400")
+                    div(id="page-loader") Loading page ...
+            h3 Status Processamento Full
             br
-            input(class='btn btn-success' type='submit' value='enviar' id='btn_enviar_ocr')
+            pre(id='ocr_result')
             br
-    div(style="clear:both")
-        br
-        hr
-        h3 Status Processamento Full
-        br
-        pre(id='ocr_result')
-        br
-        pre(id='status_ocr')
+            pre(id='status_ocr')

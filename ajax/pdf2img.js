@@ -7,7 +7,7 @@ var uuid = require('uuid')
 
 let tasks = []
 let curTasks = 0
-let limitProcess = 4
+let limitProcess = 5
 
 function processQueue(task, newTask){
 
@@ -29,20 +29,13 @@ function processQueue(task, newTask){
             
             let index = -1
 
-            tasks.forEach((taskItem, taskIndex) => {
+            let found = tasks.forEach((taskItem, taskIndex) => {
                 if(taskItem.uuid == task.uuid){
                     index = taskIndex
                 }
             })
             
-            if(index == -1) {
-
-                // console.log('UUID nao encontrado')
-                // console.log(tasks)
-                // console.log(task)
-                // process.exit()
-            }
-            else{
+            if(index != -1) {
 
                 console.log('index')
                 console.log(index)

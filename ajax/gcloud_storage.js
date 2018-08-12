@@ -18,6 +18,7 @@ function gCloudStorageSubmit(uuidFolder){
 
         var myBucket = storage.bucket(BUCKET_NAME)
 
+        // Cria pasta no Google Storage
         var folderCreation = myBucket.file(FOLDER_DESTINATION);
         
         folderCreation.createWriteStream({resumable: false})
@@ -30,6 +31,7 @@ function gCloudStorageSubmit(uuidFolder){
             
             let folderPath = './uploads/'+ uuidFolder
 
+            // Efetua a leitura do conteudo da pasta
             fs.readdir(folderPath, (err, files) => {
 
                 console.log('Saving files ...')
@@ -84,7 +86,7 @@ function gCloudStorageSubmit(uuidFolder){
 function gCloudStorageGetImage(uuid, indexImage){
 
     return new Promise((resolve, reject) => {
-
+        
         var storage = GoogleCloudStorage({
             projectId: projectId,
             keyFilename: './keys/key_gcloud_vision.json'

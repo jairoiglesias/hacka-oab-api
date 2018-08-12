@@ -4,27 +4,27 @@ let documentWordKeys = [
         mapKeys: [
             {
                 keys: ['guia', 'número', 'documento', 'banco', 'valor', 'total', '´processo', 'vencimento', 'agência', 'código', 'pagador', 'autentica'],
-                percAcc: 80
+                percAcc: 90
             },
             {
                 keys: ['guia', 'recolhimento', 'pedido', 'nome', 'cpf', 'rg', 'processo', 'valor', 'total', 'código'],
-                percAcc: 80
+                percAcc: 90
             },
             {
                 keys: ['guia', 'processo', 'valor', 'total', 'código', 'autentica', 'número', 'série', 'emissão', 'desarquivamento'],
-                percAcc: 80
+                percAcc: 90
             },
             {
                 keys: ['guia', 'número', 'documento', 'banco', 'valor', 'vencimento', 'agência', 'código', 'pagador', 'autentica'],
-                percAcc: 80
+                percAcc: 90
             },
             {
                 keys: ['guia', 'recolhimento', 'autentica', 'valor', 'processo', 'natureza', 'juizo', 'comarca', 'receita'],
-                percAcc: 80
+                percAcc: 90
             },
             {
                 keys: ['guia', 'requerente', 'autentica', 'valor', 'processo', 'natureza', 'comarca', 'arrecadação'],
-                percAcc: 80
+                percAcc: 90
             }
         ]
     },
@@ -33,22 +33,22 @@ let documentWordKeys = [
         mapKeys: [
             {
                 keys: ['comprovante', 'banco', 'valor', 'barras', 'autentica', 'total'],
-                percAcc: 80
+                percAcc: 90
             },{
                 keys: ['comprovante', 'data', 'transação', 'autentica', 'valor', 'agência'],
-                percAcc: 80
+                percAcc: 90
             },
             {
                 keys: ['comprovante', 'data', 'chave', 'segurança', 'vencimento', 'valor'],
-                percAcc: 80
+                percAcc: 90
             },
             {
                 keys: ['comprovante', 'banco', 'valor', 'barras', 'autentica', 'conta'],
-                percAcc: 80
+                percAcc: 90
             },
             {
                 keys: ['comprovante', 'correios', 'valor', 'cep', 'destino', 'caixa'],
-                percAcc: 80
+                percAcc: 90
             },
             {
                 keys: ['valor', 'cep', 'operador', 'postagem', 'peso', 'dimensoes', 'preco', 'comprovante', 'cliente'],
@@ -57,6 +57,10 @@ let documentWordKeys = [
             {
                 keys: ['valor', 'cep', 'operador', 'postagem', 'peso', 'objeto', 'contrato', 'atendimento', 'cidade'],
                 percAcc: 60
+            },
+            {
+                keys: ['comprovante', 'bradesco', 'barras', 'pagador', 'sacador', 'data', 'transação', 'valor', 'autentica', 'multa', 'juros', 'agência'],
+                percAcc: 80
             }
         ]
     },
@@ -92,11 +96,11 @@ let documentWordKeys = [
                 percAcc: 70
             },
             {
-                keys: ['ativos', 'financeiros', 'processo', 'autos', 'requerer', 'deferimento', 'penhora', 'oab'],
+                keys: ['ativos', 'processo', 'autos', 'requerer', 'deferimento', 'penhora', 'oab'],
                 percAcc: 70
             },
             {
-                keys: ['ativos', 'financeiros', 'processo', 'requer', 'deferimento', 'bacenjud', 'oab'],
+                keys: ['paradeiro', 'processo', 'requer', 'deferimento', 'bacenjud', 'oab'],
                 percAcc: 70
             }
         ]
@@ -114,6 +118,10 @@ let documentWordKeys = [
             },
             {
                 keys: ['processo', 'partes', 'movimentações', 'valor', 'http', 'data', 'foro'],
+                percAcc: 80
+            },
+            {
+                keys: ['processo', 'partes', 'movimenta', 'executado', 'exequente', 'http', 'consulta'],
                 percAcc: 80
             }
         ]

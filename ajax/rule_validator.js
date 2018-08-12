@@ -36,10 +36,10 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
       _dadosSolicitacao = (typeof dadosSolicitacao == 'object') ? dadosSolicitacao : JSON.parse(dadosSolicitacao)
     }
 
-    console.log('+++++++++++++++++++++++++++++++++++++=')
-    console.log(_dadosSolicitacao)
+    // console.log('+++++++++++++++++++++++++++++++++++++=')
+    // console.log(_dadosSolicitacao)
 
-    console.log('==============================================')
+    // console.log('==============================================')
     
     promisify(dokia.view)('field', 'field-view').then((resultView)=>{
 
@@ -128,7 +128,7 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
 
               }
 
-              console.log('==========')
+              // console.log('==========')
               // console.log(tamWks)
               // console.log(wksIndex)
               // console.log('==========')
