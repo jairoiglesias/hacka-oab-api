@@ -165,6 +165,7 @@ block content
 
                         lastUUID = result
                         $('#ocr_result').text(JSON.stringify(result))
+                        //- $('#ocr_result').text(result)
 
                     })
 
@@ -211,7 +212,29 @@ block content
                 })
 
                 promise.then(function(result){
-                    $('#status_ocr').text(JSON.stringify(result, undefined, 2))
+
+                    var texto = '<pre>'
+                    texto += JSON.stringify(result, null, 4)
+                    texto += '</pre>'
+
+                    $('#status_ocr_result').text('')
+                    $('#status_ocr_result').append(texto)
+
+                    $('#ocr_pretty_result').text('')
+
+                    result.ocr.ocr.forEach((ocrItem, ocrIndex) => {
+
+                        var texto = '<pre>'
+                        texto += "=> OCR Data: <br><br>"
+                        texto += String(ocrItem.ocrData) + '<br><br>'
+                        texto += "=> resPageIndex: <br><br>"
+                        texto += ocrItem.resPageIndex + "<br><br>"
+                        texto += "=> Name: <br><br>"
+                        texto += ocrItem.name + "<br><br>"
+                        texto += '</pre><br>'
+                        $('#ocr_pretty_result').append(texto)
+
+                    })
 
                     let url =  'get_pdf/' + lastUUID._uuid
 
@@ -392,4 +415,10 @@ block content
             br
             pre(id='ocr_result')
             br
-            pre(id='status_ocr')
+            div(id='status_ocr_container' style="width:48%;float:left") 
+                strong Original JSON Response
+                div(id='status_ocr_result')
+            div(id="ocr_pretty_container" style="width:48%;float:right") 
+                strong OCR Pretty
+                div(id='ocr_pretty_result')
+            br

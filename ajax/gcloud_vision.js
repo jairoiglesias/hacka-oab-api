@@ -160,6 +160,8 @@ function gCloudTextOCRFromPDF(uuid, pdfBaseName){
                                     const context = result.context
 
                                     let ocrData = fullTextAnnotation == null ? null : fullTextAnnotation.text
+                                    // ocrData = ocrData.replace(/\n/g, String.fromCharCode(10))
+
                                     let resPageIndex = context == null ? null : context.pageNumber
 
                                     ocr.push({
