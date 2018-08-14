@@ -5,6 +5,8 @@ var fs = require('fs')
 var path = require('path')
 var url = require('url')
 var rp = require('request-promise').defaults({simple : false})
+var zipFolder = require('zip-folder')
+var rmdir = require('rimraf');
 
 // Carrega modulos customizados
 let m_ocrParser = require('./../ajax/ocr_parser.js')
@@ -1168,19 +1170,18 @@ module.exports = function(app) {
 
               }                
                   
-              let m_WKS = require('./../ajax/wks.js')
-
+              
               // Associa os nomes dos documentos no array principal
               reqWKS.ocr = reqWKS.ocr.map((ocrItem, ocrIndex) => {
-
+                
                 let filter = ocrParseResult.filter((ocrParseItem) => {
                   
                   if(ocrParseItem != undefined){
                     return ocrParseItem.resPageIndex == ocrItem.resPageIndex
                   }
-
+                  
                 })
-
+                
                 if(filter.length == 0){
                   ocrItem.name = ''
                 }
@@ -1189,17 +1190,19 @@ module.exports = function(app) {
                 }
                 
                 return ocrItem
-
+                
               })
-
+              
               console.log(reqWKS.ocr)
-
+              
               // DEBUG
               // console.log('finalizado')
               // res.app.io.to(socketId).emit('msg', 'finish')
-
+              
               console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
-
+              
+              let m_WKS = require('./../ajax/wks.js')
+              
               m_WKS.processWKSv4(reqWKS.ocr, (err) => {
 
                 console.log('Processamento WKS finalizado')
@@ -1266,6 +1269,425 @@ module.exports = function(app) {
     })
 
     
+  })
+
+  app.post('/process_ocr_v3', upload.any(), (req, res) => {
+
+    let _uuid = req.body.uuid
+
+    // Analisa o tipo de POST submetido
+    let promiseParsePost = new Promise((resolve, reject) => {
+      
+      let _url = req.body.urlFile
+
+      if(_url != undefined){
+
+        let fileName = path.basename(_url)
+
+        // Efetua o download do PDF
+        let requestOptions = {
+          method: 'GET',
+          resolveWithFullResponse: true,
+          uri: _url,
+          encoding: "binary",
+          headers: {
+            'Content-type': 'application/pdf'
+          },
+          rejectUnauthorized: false
+        }
+
+        console.log('Efetuando Download de PDF ...')
+    
+        rp(requestOptions).then((response) => {
+    
+          console.log('Download finalizado !!!')
+
+          let body = response.body
+          
+          // Salva em arquivo o PDF
+          let outputFilePath = './uploads/'+fileName
+          
+          let writeStream = fs.createWriteStream(outputFilePath);
+
+          writeStream.write(body, 'binary')
+          writeStream.end()
+
+          writeStream.on("finish", () => {
+
+            console.log('Escrita do Stream Finalizado')
+
+            // Guarda o nome original do arquivo sem extensao
+            var originalname = path.parse(outputFilePath).name + '.pdf'
+            // var originalnameRaw = originalname.split('.')[0]
+
+            var newFileNamePDF = './uploads/'+_uuid+'/'+originalname
+            var newFolderName = './uploads/'+_uuid
+
+            // Cria o diretorio para guardar o PDF
+            fs.mkdir(newFolderName, (err) => {
+              
+              if(err) console.log(err)
+              
+              console.log('dir created')
+              
+              // Renomeia o arquivo para o novo diretorio
+              fs.rename(outputFilePath, newFileNamePDF,  (err) => {
+                
+                if (err) throw err;
+                
+                console.log('renamed complete');
+                resolve({newFileNamePDF, newFolderName})
+
+              })
+
+            })
+
+          })
+
+
+        })
+
+      }
+
+      if(req.files != undefined){
+
+        // Guarda o nome original do arquivo sem extensao
+        var originalname = req.files[0].originalname
+        var originalnameRaw = originalname.split('.')[0]
+
+        fileNameUpload = originalnameRaw
+        
+        var file = req.files[0].path
+
+        // Guarda o nome original do arquivo sem extensao
+        // var originalname = path.parse(outputFilePath).name + '.pdf'
+        // var originalnameRaw = originalname.split('.')[0]
+
+        var newFileNamePDF = './uploads/'+_uuid+'/'+originalname
+        var newFolderName = './uploads/'+_uuid
+
+        // Cria o diretorio para guardar o PDF
+        fs.mkdir(newFolderName, (err) => {
+          
+          if(err) console.log(err)
+          
+          console.log('dir created')
+          
+          // Renomeia o arquivo para o novo diretorio
+          fs.rename(file, newFileNamePDF,  (err) => {
+        
+            if (err) throw err;
+            
+            console.log('renamed complete');
+            resolve({newFileNamePDF, newFolderName})
+
+          })
+
+        })
+
+      }
+
+    })
+
+    promiseParsePost.then((result) => {
+
+      // Guarda o SocketID
+      let socketId = req.body.socket_id
+
+      let newFileNamePDF = result.newFileNamePDF
+      let newFolderName = result.newFolderName
+
+      // Devolve o UUID para o cliente
+      // res.send({_uuid})
+      
+      let dadosSolicitacao = req.body.dadosSolicitacao
+
+      // Cria objeto JSON que sera usado para envio de requisicao
+      var reqWKS = {
+        ocr: []
+      }
+
+      console.log(newFileNamePDF)
+      console.log('Salvando o PDF no Google Cloud Storage')
+      
+      let pdfBaseName = path.basename(newFileNamePDF)
+      
+      // Salva o PDF no Google Cloud Storage
+      m_gCloudStorage.gCloudStorageSubmit(_uuid).then((urls) => {
+
+        // Efetua o processamento OCR diretamente do PDF no Storage
+        var m_gCloudVision = require('./../ajax/gcloud_vision.js')
+        
+        console.log('Iniciando extração de texto do PDF')
+
+        m_gCloudVision.gCloudTextOCRFromPDF(_uuid, pdfBaseName).then((result) => {
+
+          console.log('Google Cloud Vision PDF Extraction Success!')
+          console.log(result)
+
+          if(result.ocr.length == 0){
+
+            res.send(reqWKS)
+
+          }
+          else{
+
+            reqWKS.ocr = result.ocr
+
+            // Prepara a execução do OCR Parser para analisar os textos
+            let promisesOcrParser = reqWKS.ocr.map((ocrItem, ocrIndex) => {
+              if(ocrItem.ocrData.length > 0){
+                return m_ocrParser.ocrParser(ocrItem)
+              }
+            })
+
+            Promise.all(promisesOcrParser).then((ocrParseResult) => {
+
+              console.log('Ocr Parser feito com sucesso')
+              console.log(JSON.stringify(ocrParseResult))
+
+              // Identifica quais documentos foram identificados
+
+              let docFound = []
+
+              ocrParseResult.forEach((ocrParseData, ocrParseIndex) => {
+
+                if(ocrParseData != undefined){
+
+                  let parseItens = ocrParseData.itens.filter((itemData) => {
+                    let name = itemData.name
+
+                    if(docNames.indexOf(name) != -1){
+                      return true
+                    }
+
+                  })
+
+                  if(parseItens.length > 0){
+                    docFound.push(parseItens[0].name)
+                  }
+                }
+
+              })
+
+              // Identifica quais documentos não foram identificados
+
+              let docNotFound = docNames.filter((docName) => {
+                return docFound.indexOf(docName) == -1
+              })
+
+              // Identifica se existe alguma pagina nao identificada
+              let invalidPages = ocrParseResult.filter((ocrParseData) => {
+                if(ocrParseData != undefined){
+                  return ocrParseData.itens.length == 0
+                }
+              })
+
+              let status = ''
+
+              if (invalidPages.length != 0){
+
+                console.log('Não foram identificados documentos em algumas paginas')
+
+                status = 'Existem documentos inválidos'
+
+              }
+              else{
+
+                status = 'finish'
+
+              }
+
+              // Associa os nomes dos documentos no array principal
+              reqWKS.ocr = reqWKS.ocr.map((ocrItem, ocrIndex) => {
+                
+                let filter = ocrParseResult.filter((ocrParseItem) => {
+                  
+                  if(ocrParseItem != undefined){
+                    return ocrParseItem.resPageIndex == ocrItem.resPageIndex
+                  }
+                  
+                })
+                
+                if(filter.length == 0){
+                  ocrItem.name = ''
+                }
+                else{
+                  ocrItem.name = filter[0].itens.length == 0 ? '' : filter[0].itens[0].name
+                }
+                
+                return ocrItem
+                
+              })
+
+              // Salva os dados no MongoDb
+              let reg = {
+                uuid: _uuid,
+                status: status,
+                created: new Date(),
+                ocr: reqWKS,
+                ocrParser: {
+                  invalidPages, docFound, docNotFound
+                },
+                fileName: newFileNamePDF
+              }
+
+              db.collection('extract_ocr').insert(reg, (err, records) => {
+                if(err) throw err
+                console.log('Registro inserido no MongoDb')
+                // res.app.io.to(socketId).emit('msg', 'finish')
+
+                res.send('1')
+
+              })
+              
+            })
+
+          }
+
+        })
+
+      })
+
+    })
+
+  })
+
+  app.post('/save_upload_batch', (req, res) => {
+
+    let uuid = req.body.uuid
+
+    // Salva os dados no MongoDb
+    let reg = {
+      uuid
+    }
+
+    db.collection('last_uploads_batch').insert(reg, (err, records) => {
+      if(err) throw err
+      console.log('UUID do processo massivo de OCR salvo')
+      // res.app.io.to(socketId).emit('msg', 'finish')
+
+      res.send('1')
+
+    })
+
+  })
+
+  app.get('/get_last_5_uploads_batch', (req, res) => {
+
+    db.collection('last_uploads_batch').find().sort({_id: -1}).limit(5).toArray((err, results) => {
+      
+      res.send(results)
+
+    })
+
+  })
+
+  app.get('/get_download_upload_batch/:uuid', (req, res) => {
+
+    let uuid = req.params.uuid
+
+    console.log('Download De Upload/OCR solicitado')
+    console.log(uuid)
+
+    db.collection('extract_ocr').find({uuid: uuid}).sort({_id: -1}).limit(5).toArray((err, results) => {
+      
+      console.log(results)
+
+      let rootDir = `downloads/${uuid}`
+
+      fs.mkdir(rootDir, (err) => {
+
+        let promises = []
+
+        results.forEach((regData, regIndex) => {
+
+          let promise = new Promise((resolve, reject) => {
+
+            let basename = path.basename(regData.fileName)
+            basename = basename.split('.pdf')[0]
+            
+            fs.mkdir(rootDir + '/' + basename, (err) => {
+              
+              let totalOCR = regData.ocr.ocr.length
+
+              regData.ocr.ocr.forEach((ocrData, ocrIndex) => {
+
+                let pageIndex = ocrData.resPageIndex
+                let docName = ocrData.name || 'NOT_FOUND'
+
+                let fileName = `${rootDir}/${basename}/${pageIndex}_${docName}.txt`
+                let fileData = ocrData.ocrData
+
+                // console.log(fileName)
+                
+                fs.writeFile(fileName, fileData, (err) => {
+        
+                  if(err) throw err
+
+                  if(ocrIndex == (totalOCR - 1)){
+                    resolve()
+                  }
+                  
+                })
+
+              })
+  
+            })
+
+
+          })
+
+          promises.push(promise)
+          
+        })
+          
+        Promise.all(promises).then(() => {
+  
+          console.log('All Files Writed')
+
+          zipFolder(rootDir, rootDir + '.zip', function(err) {
+            
+            if(err) {
+              console.log('oh no!', err);
+              res.send('1')
+            } 
+            else {
+              
+              console.log('EXCELLENT');
+
+              fs.readFile(rootDir + '.zip', function(err, data) {
+
+                // console.log(data)
+
+                res.writeHead(200, {
+                  'Content-Type': 'application/zip',
+                  'Content-disposition': 'attachment; filename=batch_ocr.zip'
+                });
+
+                res.end(data, 'binary')
+                
+                rmdir(rootDir, (error) => {
+
+                  fs.unlink(rootDir +'.zip', (err) => {
+                    if(err) throw err
+                    console.log('Clear Temp Files')
+                  })
+
+                })
+
+              })
+
+            }
+
+          })
+  
+        })
+
+      })
+
+    })
+
   })
 
   app.get('/get_image_page_old/:uuid/:index', (req, res) => {

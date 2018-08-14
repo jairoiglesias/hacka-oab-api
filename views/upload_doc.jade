@@ -4,6 +4,24 @@ block content
 
     style(type="text/css").
 
+        #last_downloads li{
+            padding:3px; 
+        }
+
+        #last_downloads li:hover{
+            cursor: pointer;
+            background: #337ab738;
+            border-radius:3px;
+        }
+
+        #container_last_downloads{
+            border: 1px solid;
+            background: #eeeeee7d;
+            padding: 5px;
+            border-radius: 3px;
+            margin: 10px 2px;
+        }
+
   
     script(type="text/javascript").
   
@@ -26,6 +44,55 @@ block content
 
             var lastUUID = ''
 
+            function loadLastUploadsBatch(){
+
+                $('#last_downloads').html('')
+
+                let promise = $.ajax({
+                    url: 'get_last_5_uploads_batch'
+                })
+
+                promise.then((results) => {
+
+                    console.log('Ultimos Uploads em Lote')
+                    
+                    results.forEach((uploadItem, uploadIndex) => {
+
+                        $('#last_downloads').append('<li><a>' + uploadItem.uuid + '</a></li>')
+
+                    })
+
+                })
+            }
+
+            loadLastUploadsBatch()
+
+
+            $('#last_downloads').on('click', 'li', (e) => {
+
+                let uuid = e.target.innerText.trim()
+                let url = 'get_download_upload_batch/' + uuid
+                
+                let promise = $.ajax({
+                    url: url,
+                    contentType: false,
+                    processData: false,
+                        xhrFields: {
+                        responseType: 'blob'
+                    },
+                })
+
+                promise.then((result) => {
+                    console.log('Download Finished')
+
+                    loadLastUploadsBatch()
+
+                    var blob = new Blob([result], {type: "application/zip"});
+                    saveAs(blob, "batch_ocr.zip");
+
+                })
+            })
+
             $("#file_doc").change(function() {
 
                 var files = [];
@@ -36,6 +103,20 @@ block content
                 $('#files').html('')
                 files.forEach((value, index) => {
                     $('#files').append('<p>'+value+'</p>')
+                })
+
+            })
+
+             $("#file_doc_v3").change(function() {
+
+                var files = [];
+                for (var i = 0; i < $(this).get(0).files.length; ++i) {
+                    files.push($(this).get(0).files[i].name);
+                }
+                
+                $('#files_v3').html('')
+                files.forEach((value, index) => {
+                    $('#files_v3').append('<p>'+value+'</p>')
                 })
 
             })
@@ -133,6 +214,8 @@ block content
                 // Recupera os arquivos do input file
                 var file = $('#file_doc_v2')[0].files[0]
 
+                console.log(file)
+
                 if(file == undefined){
                     alertify.error('Selecione um arquivo JPEG/TIFF')
                 }
@@ -166,6 +249,75 @@ block content
                         lastUUID = result
                         $('#ocr_result').text(JSON.stringify(result))
                         //- $('#ocr_result').text(result)
+
+                    })
+
+                }
+
+            })
+
+            $('#frm_upload_doc_v3').submit(function(e){
+
+                e.preventDefault()
+
+                var promises = [];
+                var objFiles = $('#file_doc_v3').get(0).files
+
+                if(objFiles == undefined){
+                    alertify.error('Selecione um arquivo JPEG/TIFF')
+                }
+                else{
+
+                    let uuid = window.uuid()
+
+                    var lenFiles = objFiles.length
+
+                    for (var i = 0; i < lenFiles; ++i) {
+
+                        let file = objFiles[i]
+
+                        console.log(file)
+
+                        // Monta um objeto FormData com os arquivos
+                        let formData = new FormData();
+                        formData.append('file_doc', file);
+                        formData.append('socket_id', socket.id)
+                        formData.append('uuid', uuid)
+
+                        $('#status_upload_batch').text('Processando ...')
+                        
+                        // Envia ajax para processar o upload
+                        let promise = $.ajax({
+                            url: 'process_ocr_v3',
+                            type: 'POST',
+                            data: formData,
+                            contentType: false,
+                            enctype: 'multipart/form-data',
+                            processData: false
+                        })
+
+                        promises.push(promise)
+                    }
+
+                    console.log(promises.length)
+
+                    Promise.all(promises).then(() => {
+
+                        console.log('All Uploads Finished')
+
+                        $('#status_upload_batch').text('Finalizado !')
+
+                        let promise = $.ajax({
+                            url: 'save_upload_batch',
+                            type: 'POST',
+                            data: {uuid}
+                        })
+
+                        promise.then((result) => {
+
+                            $('#last_downloads').append('<li><a>' + uuid + '<a/></li>')
+
+                        })
 
                     })
 
@@ -367,7 +519,9 @@ block content
     
     div(id="app")
         div(class="container")
-            h2 Modulo de Teste - OCR Google Cloud Vision
+            div(class="jumbotron jumbotron-fluid")
+                h2(class="display-4") SandBox OCR - DokIA
+                p(class="lead") Ambiente de testes para Upload de PDF
             hr
             //- a(class='btn btn-info' href='get_all_files'  target='_blank') Listar Urls dos Textos
             div(style="float:left;width:45%")
@@ -395,6 +549,19 @@ block content
                     br
                     input(class='btn btn-success' type='submit' value='enviar' id='btn_enviar_ocr')
                     br
+                    br
+                h3 Metodo Upload do Computador (Somente OCR com multipla seleção)
+                form(method="post" id="frm_upload_doc_v3" enctype="multipart/form-data")
+                    //- input(class='form-control' type='file' name='file_doc' id='file_doc' accept=".jpg,.jpeg,.png,.tiff")
+                    input(class='form-control' type='file' name='file_doc_v3' id='file_doc_v3' accept=".pdf" multiple)
+                    br
+                    h4(id='status_upload_batch')
+                    div(id="container_last_downloads")
+                        h5 Ultimos Uploads
+                        ul(id='last_downloads')
+                    input(class='btn btn-success' type='submit' value='enviar' id='btn_enviar_v3')
+                br
+                div(id="files_v3")
             div(style="clear:both")
             br
             hr
