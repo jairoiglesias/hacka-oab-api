@@ -5,18 +5,18 @@ let GoogleCloudStorage = require('@google-cloud/storage');
 
 const PROJECT_ID = 'teste-206416';
 
+process.env.GOOGLE_APPLICATION_CREDENTIALS = './keys/key_gcloud_vision.json'
+
+// Imports the Google Cloud client library
+const vision = require('@google-cloud/vision');
+
+// Creates a client
+const client = new vision.ImageAnnotatorClient();
+
 // PLANO B Mother Fucker
 
 function gCloudTextOCR(imageFullPath, index, callback){
-
-    process.env.GOOGLE_APPLICATION_CREDENTIALS = './keys/key_gcloud_vision.json'
-
-    // Imports the Google Cloud client library
-    const vision = require('@google-cloud/vision');
-
-    // Creates a client
-    const client = new vision.ImageAnnotatorClient();
-
+    
     // Performs label detection on the image file
     client.documentTextDetection(imageFullPath).then(results => {
         

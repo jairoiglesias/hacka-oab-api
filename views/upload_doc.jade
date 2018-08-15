@@ -58,7 +58,10 @@ block content
                     
                     results.forEach((uploadItem, uploadIndex) => {
 
-                        $('#last_downloads').append('<li><a>' + uploadItem.uuid + '</a></li>')
+                        let uuid = uploadItem.uuid
+                        let dateCreated = new Date(uploadItem.date_created).toLocaleString()
+
+                        $('#last_downloads').append('<li><a>' + dateCreated + '<br><span>' + uuid + '</span></a></li>')
 
                     })
 
@@ -70,7 +73,7 @@ block content
 
             $('#last_downloads').on('click', 'li', (e) => {
 
-                let uuid = e.target.innerText.trim()
+                let uuid = e.target.getElementsByTagName('span')[0].innerText.trim()
                 let url = 'get_download_upload_batch/' + uuid
                 
                 let promise = $.ajax({
@@ -116,7 +119,7 @@ block content
                 
                 $('#files_v3').html('')
                 files.forEach((value, index) => {
-                    $('#files_v3').append('<p>'+value+'</p>')
+                    $('#files_v3').append('<p id="'+value+'">'+value+'</p>')
                 })
 
             })
@@ -268,6 +271,8 @@ block content
                 }
                 else{
 
+                    $('#date_time_upload_batch').text('Inicio: ' + new Date().toLocaleString())
+
                     let uuid = window.uuid()
 
                     var lenFiles = objFiles.length
@@ -276,8 +281,8 @@ block content
 
                         let file = objFiles[i]
 
-                        console.log(file)
-
+                        //- console.log(file)
+                        
                         // Monta um objeto FormData com os arquivos
                         let formData = new FormData();
                         formData.append('file_doc', file);
@@ -287,13 +292,42 @@ block content
                         $('#status_upload_batch').text('Processando ...')
                         
                         // Envia ajax para processar o upload
-                        let promise = $.ajax({
-                            url: 'process_ocr_v3',
-                            type: 'POST',
-                            data: formData,
-                            contentType: false,
-                            enctype: 'multipart/form-data',
-                            processData: false
+                        let promise = new Promise((resolve, reject) => {
+                            
+                            let promiseAjax = $.ajax({
+                                url: 'process_ocr_v3',
+                                type: 'POST',
+                                data: formData,
+                                contentType: false,
+                                enctype: 'multipart/form-data',
+                                processData: false,
+                                beforeSend: function(jqXHR){
+                                    jqXHR.postData = formData
+                                }
+                            })
+
+                            promiseAjax.done((fileName) => {
+                            
+                                let backColor = '#dff0d8c4'
+                                document.getElementById(fileName).style.background = backColor
+
+                                resolve()
+
+                            })
+                            .fail((jqXHR, textStatus, errorThrown) => {
+
+                                console.log('Error CATCHED')
+                                console.log(jqXHR.postData.get('file_doc'))
+                                
+                                let fileName = jqXHR.postData.get('file_doc').name
+                                let backColor = '#ffcdd2'
+
+                                document.getElementById(fileName).style.background = backColor
+
+                                resolve()
+
+                            })
+
                         })
 
                         promises.push(promise)
@@ -305,17 +339,22 @@ block content
 
                         console.log('All Uploads Finished')
 
+                        $('#date_time_upload_batch').text($('#date_time_upload_batch').text() + '\n Fim: ' + new Date().toLocaleString())
+
                         $('#status_upload_batch').text('Finalizado !')
 
                         let promise = $.ajax({
                             url: 'save_upload_batch',
                             type: 'POST',
-                            data: {uuid}
+                            data: {
+                                date_created: new Date(),
+                                uuid: uuid
+                            }
                         })
 
                         promise.then((result) => {
 
-                            $('#last_downloads').append('<li><a>' + uuid + '<a/></li>')
+                            loadLastUploadsBatch()
 
                         })
 
@@ -556,6 +595,7 @@ block content
                     input(class='form-control' type='file' name='file_doc_v3' id='file_doc_v3' accept=".pdf" multiple)
                     br
                     h4(id='status_upload_batch')
+                    strong(id='date_time_upload_batch')
                     div(id="container_last_downloads")
                         h5 Ultimos Uploads
                         ul(id='last_downloads')

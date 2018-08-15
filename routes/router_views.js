@@ -1326,9 +1326,7 @@ module.exports = function(app) {
             // Cria o diretorio para guardar o PDF
             fs.mkdir(newFolderName, (err) => {
               
-              if(err) console.log(err)
-              
-              console.log('dir created')
+              if(!err) console.log('dir created')
               
               // Renomeia o arquivo para o novo diretorio
               fs.rename(outputFilePath, newFileNamePDF,  (err) => {
@@ -1369,9 +1367,7 @@ module.exports = function(app) {
         // Cria o diretorio para guardar o PDF
         fs.mkdir(newFolderName, (err) => {
           
-          if(err) console.log(err)
-          
-          console.log('dir created')
+          if(!err) console.log('dir created')
           
           // Renomeia o arquivo para o novo diretorio
           fs.rename(file, newFileNamePDF,  (err) => {
@@ -1423,7 +1419,7 @@ module.exports = function(app) {
         m_gCloudVision.gCloudTextOCRFromPDF(_uuid, pdfBaseName).then((result) => {
 
           console.log('Google Cloud Vision PDF Extraction Success!')
-          console.log(result)
+          // console.log(result)
 
           if(result.ocr.length == 0){
 
@@ -1444,7 +1440,7 @@ module.exports = function(app) {
             Promise.all(promisesOcrParser).then((ocrParseResult) => {
 
               console.log('Ocr Parser feito com sucesso')
-              console.log(JSON.stringify(ocrParseResult))
+              // console.log(JSON.stringify(ocrParseResult))
 
               // Identifica quais documentos foram identificados
 
@@ -1537,7 +1533,9 @@ module.exports = function(app) {
                 console.log('Registro inserido no MongoDb')
                 // res.app.io.to(socketId).emit('msg', 'finish')
 
-                res.send('1')
+                let _fileName = path.basename(newFileNamePDF)
+
+                res.send(_fileName)
 
               })
               
@@ -1556,10 +1554,11 @@ module.exports = function(app) {
   app.post('/save_upload_batch', (req, res) => {
 
     let uuid = req.body.uuid
+    let date_created = req.body.date_created
 
     // Salva os dados no MongoDb
     let reg = {
-      uuid
+      uuid, date_created
     }
 
     db.collection('last_uploads_batch').insert(reg, (err, records) => {
@@ -1590,7 +1589,7 @@ module.exports = function(app) {
     console.log('Download De Upload/OCR solicitado')
     console.log(uuid)
 
-    db.collection('extract_ocr').find({uuid: uuid}).sort({_id: -1}).limit(5).toArray((err, results) => {
+    db.collection('extract_ocr').find({uuid: uuid}).toArray((err, results) => {
       
       console.log(results)
 

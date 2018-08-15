@@ -4,14 +4,14 @@ let GoogleCloudStorage = require('@google-cloud/storage');
 
 const projectId = 'teste-206416';
 
+var storage = GoogleCloudStorage({
+    projectId: projectId,
+    keyFilename: './keys/key_gcloud_vision.json'
+})
+
 function gCloudStorageSubmit(uuidFolder){
 
     return new Promise((resolve, reject) => {
-        
-        var storage = GoogleCloudStorage({
-            projectId: projectId,
-            keyFilename: './keys/key_gcloud_vision.json'
-        })
         
         const BUCKET_NAME = 'dokia-storage'
         const FOLDER_DESTINATION = 'dokia_uploads/' + uuidFolder + '/'
@@ -43,7 +43,8 @@ function gCloudStorageSubmit(uuidFolder){
                         let fileName = folderPath + '/' + fileItem
                     
                         myBucket.upload(fileName, {destination: FOLDER_DESTINATION + fileItem}, (err, file) => {
-                            if(err) throw err
+                            
+                            if(err) console.log(err)
 
                             // Recupera a URL protegida do arquivo                        
                             file.getSignedUrl({
@@ -86,7 +87,7 @@ function gCloudStorageSubmit(uuidFolder){
 function gCloudStorageGetImage(uuid, indexImage){
 
     return new Promise((resolve, reject) => {
-        
+
         var storage = GoogleCloudStorage({
             projectId: projectId,
             keyFilename: './keys/key_gcloud_vision.json'
