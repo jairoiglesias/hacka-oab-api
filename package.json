@@ -21,7 +21,6 @@
     "express-load": "*",
     "express-session": "*",
     "gm": "^1.23.1",
-    "google-cloud": "^0.57.0",
     "ip": "^1.1.5",
     "jade": "^1.11.0",
     "mongodb": "^3.0.1",
