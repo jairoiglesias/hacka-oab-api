@@ -10,9 +10,6 @@ function addContentType(req) {
   }
 }
 
-/**
- * @api private
- */
 module.exports = {
     addContentType: addContentType
 };

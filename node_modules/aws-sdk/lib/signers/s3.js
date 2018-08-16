@@ -169,7 +169,4 @@ AWS.Signers.S3 = inherit(AWS.Signers.RequestSigner, {
   }
 });
 
-/**
- * @api private
- */
 module.exports = AWS.Signers.S3;

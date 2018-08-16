@@ -53,7 +53,4 @@ function translateScalar(value, shape) {
   return shape.toWireFormat(value);
 }
 
-/**
- * @api private
- */
 module.exports = JsonBuilder;

@@ -66,7 +66,4 @@ function configureEndpoint(service) {
   }
 }
 
-/**
- * @api private
- */
 module.exports = configureEndpoint;

@@ -20,9 +20,6 @@ var maxCacheEntries = 50;
  */
 var v4Identifier = 'aws4_request';
 
-/**
- * @api private
- */
 module.exports = {
   /**
    * @api private

@@ -1085,7 +1085,7 @@ module.exports = function(app) {
       let pdfBaseName = path.basename(newFileNamePDF)
       
       // Salva o PDF no Google Cloud Storage
-      m_gCloudStorage.gCloudStorageSubmit(_uuid).then((urls) => {
+      m_gCloudStorage.gCloudStorageSubmit(_uuid, pdfBaseName).then((urlStorage) => {
 
         // Efetua o processamento OCR diretamente do PDF no Storage
         var m_gCloudVision = require('./../ajax/gcloud_vision.js')
@@ -1242,7 +1242,9 @@ module.exports = function(app) {
                     ocrParser: {
                       invalidPages, docFound, docNotFound
                     },
-                    urls
+                    urls: [
+                      urlStorage
+                    ]
                   }
 
                   db.collection('analise_ocr').insert(reg, (err, records) => {
@@ -1394,7 +1396,7 @@ module.exports = function(app) {
       let newFolderName = result.newFolderName
 
       // Devolve o UUID para o cliente
-      // res.send({_uuid})
+      res.send({_uuid})
       
       let dadosSolicitacao = req.body.dadosSolicitacao
 
@@ -1409,7 +1411,9 @@ module.exports = function(app) {
       let pdfBaseName = path.basename(newFileNamePDF)
       
       // Salva o PDF no Google Cloud Storage
-      m_gCloudStorage.gCloudStorageSubmit(_uuid).then((urls) => {
+      m_gCloudStorage.gCloudStorageSubmit(_uuid, pdfBaseName).then((urls) => {
+
+        console.log('Google Cloud Storage Saved')
 
         // Efetua o processamento OCR diretamente do PDF no Storage
         var m_gCloudVision = require('./../ajax/gcloud_vision.js')
@@ -1531,11 +1535,9 @@ module.exports = function(app) {
               db.collection('extract_ocr').insert(reg, (err, records) => {
                 if(err) throw err
                 console.log('Registro inserido no MongoDb')
-                // res.app.io.to(socketId).emit('msg', 'finish')
-
+                
                 let _fileName = path.basename(newFileNamePDF)
-
-                res.send(_fileName)
+                res.app.io.to(socketId).emit('item_upload_batch_finish', _fileName)
 
               })
               
@@ -1799,7 +1801,7 @@ module.exports = function(app) {
         else{
   
           let item = urls.filter((urlData) => {
-            return urlData.fileItem.indexOf('pdf') != -1
+            return urlData.baseFileName.indexOf('pdf') != -1
           })
   
           if(item.length == 0){

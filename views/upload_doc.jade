@@ -27,6 +27,8 @@ block content
   
         $(document).ready(function(){
 
+            let uuid = ''
+            
             const socket = io()
 
             socket.on('connect', () => {
@@ -40,6 +42,45 @@ block content
                     alertify.success('Processamento Finalizado')
                     mostraStatus()
                 }
+            })
+
+            let totalPromises = 0
+
+            socket.on('item_upload_batch_finish', (msg) => {
+
+                console.log('socket on item finish')
+                console.log(msg)
+
+                let backColor = '#dff0d8c4'
+                document.getElementById(msg).style.background = backColor
+
+                totalPromises--
+
+                if(totalPromises == 0){
+
+                    console.log('All Uploads Finished')
+
+                    $('#date_time_upload_batch').text($('#date_time_upload_batch').text() + '\n Fim: ' + new Date().toLocaleString())
+
+                    $('#status_upload_batch').text('Finalizado !')
+
+                    let promise = $.ajax({
+                        url: 'save_upload_batch',
+                        type: 'POST',
+                        data: {
+                            date_created: new Date(),
+                            uuid: uuid
+                        }
+                    })
+
+                    promise.then((result) => {
+
+                        loadLastUploadsBatch()
+
+                    })
+
+                }
+
             })
 
             var lastUUID = ''
@@ -273,7 +314,7 @@ block content
 
                     $('#date_time_upload_batch').text('Inicio: ' + new Date().toLocaleString())
 
-                    let uuid = window.uuid()
+                    uuid = window.uuid()
 
                     var lenFiles = objFiles.length
 
@@ -308,8 +349,8 @@ block content
 
                             promiseAjax.done((fileName) => {
                             
-                                let backColor = '#dff0d8c4'
-                                document.getElementById(fileName).style.background = backColor
+                                //- let backColor = '#dff0d8c4'
+                                //- document.getElementById(fileName).style.background = backColor
 
                                 resolve()
 
@@ -319,10 +360,10 @@ block content
                                 console.log('Error CATCHED')
                                 console.log(jqXHR.postData.get('file_doc'))
                                 
-                                let fileName = jqXHR.postData.get('file_doc').name
-                                let backColor = '#ffcdd2'
+                                //- let fileName = jqXHR.postData.get('file_doc').name
+                                //- let backColor = '#ffcdd2'
 
-                                document.getElementById(fileName).style.background = backColor
+                                //- document.getElementById(fileName).style.background = backColor
 
                                 resolve()
 
@@ -335,28 +376,30 @@ block content
 
                     console.log(promises.length)
 
+                    totalPromises = promises.length
+
                     Promise.all(promises).then(() => {
 
-                        console.log('All Uploads Finished')
+                        //- console.log('All Uploads Finished')
 
-                        $('#date_time_upload_batch').text($('#date_time_upload_batch').text() + '\n Fim: ' + new Date().toLocaleString())
+                        //- $('#date_time_upload_batch').text($('#date_time_upload_batch').text() + '\n Fim: ' + new Date().toLocaleString())
 
-                        $('#status_upload_batch').text('Finalizado !')
+                        //- $('#status_upload_batch').text('Finalizado !')
 
-                        let promise = $.ajax({
-                            url: 'save_upload_batch',
-                            type: 'POST',
-                            data: {
-                                date_created: new Date(),
-                                uuid: uuid
-                            }
-                        })
+                        //- let promise = $.ajax({
+                        //-     url: 'save_upload_batch',
+                        //-     type: 'POST',
+                        //-     data: {
+                        //-         date_created: new Date(),
+                        //-         uuid: uuid
+                        //-     }
+                        //- })
 
-                        promise.then((result) => {
+                        //- promise.then((result) => {
 
-                            loadLastUploadsBatch()
+                        //-     loadLastUploadsBatch()
 
-                        })
+                        //- })
 
                     })
 

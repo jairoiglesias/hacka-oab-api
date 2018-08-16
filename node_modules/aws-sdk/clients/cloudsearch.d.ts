@@ -640,6 +640,8 @@ declare namespace CloudSearch {
   }
   export type DynamicFieldName = string;
   export type DynamicFieldNameList = DynamicFieldName[];
+  export type ErrorCode = string;
+  export type ErrorMessage = string;
   export interface Expression {
     ExpressionName: StandardName;
     ExpressionValue: ExpressionValue;

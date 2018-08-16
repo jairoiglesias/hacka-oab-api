@@ -3,12 +3,7 @@ require('./browser_loader');
 var AWS = require('./core');
 
 if (typeof window !== 'undefined') window.AWS = AWS;
-if (typeof module !== 'undefined') {
-    /**
-     * @api private
-     */
-    module.exports = AWS;
-}
+if (typeof module !== 'undefined') module.exports = AWS;
 if (typeof self !== 'undefined') self.AWS = AWS;
 
 /**

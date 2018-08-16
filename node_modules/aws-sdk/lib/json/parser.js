@@ -61,7 +61,4 @@ function translateScalar(value, shape) {
   return shape.toType(value);
 }
 
-/**
- * @api private
- */
 module.exports = JsonParser;

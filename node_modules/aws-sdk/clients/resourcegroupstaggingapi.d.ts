@@ -56,6 +56,7 @@ declare namespace ResourceGroupsTaggingAPI {
   export type AmazonResourceType = string;
   export type ErrorCode = "InternalServiceException"|"InvalidParameterException"|string;
   export type ErrorMessage = string;
+  export type ExceptionMessage = string;
   export type FailedResourcesMap = {[key: string]: FailureInfo};
   export interface FailureInfo {
     /**

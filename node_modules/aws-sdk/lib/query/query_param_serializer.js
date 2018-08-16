@@ -78,7 +78,4 @@ function serializeMember(name, value, rules, fn) {
   }
 }
 
-/**
- * @api private
- */
 module.exports = QueryParamSerializer;
