@@ -22,7 +22,12 @@ app.set('port', port);
 
 var server = http.createServer(app);
 
-let io = require('socket.io')(server)
+let io = require('socket.io')(server, {
+  // path: '/socket.io',
+  // transports: ['websocket'],
+  // secure: true
+  rejectUnauthorized: false
+})
   
 io.on('connect', (socket) => {
   console.log('new connection')
