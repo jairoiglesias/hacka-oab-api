@@ -16,7 +16,45 @@ const cloudant = Cloudant({
   "url": "https://96ba32ad-e17d-494f-a93e-72240b1e0b16-bluemix:e373c010bcb53c3ea89a59f7fa2642789e7bfe3128bab1c3e2762b713ab04641@96ba32ad-e17d-494f-a93e-72240b1e0b16-bluemix.cloudant.com"
 })
 
-function processRuleValidator(wksResponse, dadosSolicitacao){
+let ruleIDMap = [
+  {id: '4bbe53e2dbb349a9b341e3baba0754ae', ruleName: 'CORREIOS'},
+  {id: '17ac8fab76f84ea18ac7019271127438', ruleName: 'DIF. CORREIOS + C/ PETICAO + S/ PROT.'},
+  {id: '5da71fcbd04c4a7696d4b4f1793dadfe', ruleName: 'DIF. CORREIOS + S/PETICAO'},
+  {id: '8c4d261fb4454ff9a9e45c2fc84b13e0', ruleName: 'DIF. CORREIOS + C/ PETICAO + PROTOCOLADA'}
+]
+
+const TIPO_GASTO = 'NC_Correios'
+const DOC_NAME = 'petição'
+
+// Recupera o ID de regra efetuando parse dos valores contidos no WKS/NLU e dadosSolicitacao
+
+function getRuleIDDefinition(wksResponse, dadosSolicitacao, authMecan){
+
+  if(dadosSolicitacao.tipo_gasto == TIPO_GASTO){
+    return ruleIDMap.filter(item => item.ruleName == TIPO_GASTO)[0]
+  }
+  else{
+    let peticaoExiste = wksResponse.filter((wksData) => {
+      return wksData.name == DOC_NAME
+    })
+
+    if(peticaoExiste.length == 0){
+      return ruleIDMap.filter(item => item.ruleName == 'DIF. CORREIOS + S/PETICAO')[0]
+    }
+    else{
+      if(authMecan){
+        return ruleIDMap.filter(item => item.ruleName == 'DIF. CORREIOS + C/ PETICAO + PROTOCOLADA')[0]
+      }
+      else{
+        return ruleIDMap.filter(item => item.ruleName == 'DIF. CORREIOS + C/ PETICAO + S/ PROT.')[0]
+      }
+    }
+
+  }
+
+}
+
+function processRuleValidator(wksResponse, dadosSolicitacao, authMecan){
 
   return new Promise((resolve, reject) => {
 
@@ -25,6 +63,8 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
     console.log('['+arguments.callee.name+'] Processando ...')
     console.log('==============================================')
     
+    // Normaliza os dados de solicitação se necessário
+
     let _dadosSolicitacao = ''
 
     if(dadosSolicitacao == undefined){
@@ -38,9 +78,9 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
 
     // console.log('+++++++++++++++++++++++++++++++++++++=')
     // console.log(_dadosSolicitacao)
-
     // console.log('==============================================')
     
+    // Recupera dados do Cloudant
     promisify(dokia.view)('field', 'field-view').then((resultView)=>{
 
       if(wksResponse == undefined) {
@@ -58,9 +98,10 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
 
         resultView.rows.forEach(({value}, index) => {
 
+          // Recupera os ID de regra referentes aos dados de solicitação
+
           let promiseDadosSolicitacao = new Promise((resolve, reject) => {
 
-            // Recupera os ID de regra referentes aos dados de solicitação
             Object.keys(_dadosSolicitacao).forEach((solicData, solicIndex) => {
 
               // console.log(solicData)
@@ -108,7 +149,6 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
                   
                   const [dbItem] = entities.filter(({type}) => type === value.title)
                   
-                  
                   if (dbItem){
                     const text = dbItem.text;
                     
@@ -140,7 +180,6 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
               
             })
 
-
           })
 
           Promise.all([promiseDadosSolicitacao, promiseWks]).then(() => {
@@ -155,9 +194,16 @@ function processRuleValidator(wksResponse, dadosSolicitacao){
 
         console.log('Promises de regras de validacao resolvidas com sucesso!')
 
+        // Recupera o ID da regra
+        let idRule = getRuleIDDefinition(wksResponse, dadosSolicitacao, authMecan)
+
+        // const data = {
+        //   idRule: ID_RULE,
+        //   inputs: inputs
+        // }
+
         const data = {
-          idRule: ID_RULE,
-          inputs: inputs
+          idRule, inputs
         }
 
         console.log('Parametros do EndPoint de Validacao de Regras!')

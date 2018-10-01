@@ -24,6 +24,15 @@ m_connectDb().then(function(dbInstance){
   db = dbInstance
 })
 
+function authMecanExists(ocrText){
+
+  // var pattern = /\w{2,3}\s{1}\w{3,4}\,{0,1}\.{0,1}\s{0,1}\d{2}\.{1}\d{8}\-?\w{1}\s{1}\w{6}\s{1}\w{3,4}/
+  var pattern = /\w{2,3}\s{1}\w{3,4}\,{0,1}\.{0,1}\s{0,1}\d{2}\.{1}\d{8}\-{0,1}\w{1}\s{1}\w{5,6}\s{1}.{2,4}/
+
+  return pattern.test(ocrText)
+}
+
+// Versão usando Tesseract
 function processaOCRLote(result, index, reqWKS, callback){
 
   // ### Inicia o procedimento de analise OCR ###
@@ -152,9 +161,30 @@ module.exports = function(app) {
     dest: 'uploads/' 
   })
 
+
   app.get('/teste', (req, res) => {
     res.send('teste')
   })
+
+  // app.get('/teste2', (req, res) => {
+
+  //   var url = 'https://www.scoresolv.com.br/feedbackdokia'
+
+  //   var requestOptions = {
+  //     method: 'GET',
+  //     resolveWithFullResponse: true,
+  //     uri: url
+  //   }
+
+  //   rp(requestOptions).then((response) => {
+
+  //     let body = response.body
+
+  //     res.send(body)
+
+  //   })
+
+  // })
 
   app.post('/teste_post', upload.any(), (req, res) => {
 
@@ -250,7 +280,7 @@ module.exports = function(app) {
           var originalnameRawNumber = originalnameRaw+'_' + (index + 1)
           var newFileNameText = './uploads/'+originalnameRaw+'_' + (index + 1) + '.txt'
 
-          // ocrData = ocrData.replace(String.fromCharCode(10), '').replace(String.fromCharCode(13), '')
+          // Limpa espaços e quebras de linha
           ocrData = ocrData.replace(/(\r\n|\n|\r)/gm," ");
           ocrData = ocrData.replace(/\s+/g," ");
 
@@ -280,6 +310,7 @@ module.exports = function(app) {
         
       promises.push(promise)
 
+      // Aguarda a resolução de todas as promises
       Promise.all(promises).then(() => {
 
         console.log("=============================================")
@@ -1168,8 +1199,9 @@ module.exports = function(app) {
 
                 status = 'finish'
 
-              }                
-                  
+              }
+
+              let authMecan = false      
               
               // Associa os nomes dos documentos no array principal
               reqWKS.ocr = reqWKS.ocr.map((ocrItem, ocrIndex) => {
@@ -1187,6 +1219,16 @@ module.exports = function(app) {
                 }
                 else{
                   ocrItem.name = filter[0].itens.length == 0 ? '' : filter[0].itens[0].name
+                }
+
+                // Se peticao foi localizada tenta procurar a existencia de autenticação mecanica
+
+                if(ocrItem.name == 'petição'){
+                  authMecan = authMecanExists(ocrItem.ocrData)
+                  // console.log('Autenticacao mecanica avaliada')
+                  // console.log(ocrItem.ocrData)
+                  // console.log(authMecan)
+                  // process.exit()
                 }
                 
                 return ocrItem
@@ -1227,7 +1269,7 @@ module.exports = function(app) {
                 console.log(dadosSolicitacao)
                 console.log('===================')
 
-                m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao).then((validation)=>{
+                m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao, authMecan).then((validation)=>{
 
                   reqWKS.validation = validation
 
