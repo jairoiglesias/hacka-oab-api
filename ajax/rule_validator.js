@@ -215,7 +215,6 @@ function processRuleValidator(wksResponse, dadosSolicitacao, ocrData, authMecan)
         console.log('Parametros do EndPoint de Validacao de Regras!')
         console.log(data)
         console.log('****************')
-        process.exit()
         
         post(VALIDATOR_URL, data).then((response)=>{
           
