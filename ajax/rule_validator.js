@@ -215,7 +215,7 @@ function processRuleValidator(wksResponse, dadosSolicitacao, ocrData, authMecan)
           // return response;
 
           let resp = {
-            validatorData: response.data,
+            validationData: response.data,
             ruleName: rule.ruleName
           }
 

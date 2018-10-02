@@ -1287,7 +1287,7 @@ module.exports = function(app) {
                       urlStorage
                     ]
                   }
-
+                  
                   db.collection('analise_ocr').insert(reg, (err, records) => {
                     if(err) throw err
                     console.log('Registro inserido no MongoDb')
