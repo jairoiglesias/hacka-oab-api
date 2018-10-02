@@ -55,7 +55,7 @@ function getRuleIDDefinition(wksResponse, dadosSolicitacao, ocrData, authMecan){
 
 }
 
-function processRuleValidator(wksResponse, dadosSolicitacao, authMecan){
+function processRuleValidator(wksResponse, dadosSolicitacao, ocrData, authMecan){
 
   return new Promise((resolve, reject) => {
 
@@ -201,7 +201,7 @@ function processRuleValidator(wksResponse, dadosSolicitacao, authMecan){
         // console.log('===================================')
 
         // Recupera o ID da regra
-        let idRule = getRuleIDDefinition(wksResponse, _dadosSolicitacao, authMecan)
+        let idRule = getRuleIDDefinition(wksResponse, _dadosSolicitacao, ocrData, authMecan)
 
         // const data = {
         //   idRule: ID_RULE,
