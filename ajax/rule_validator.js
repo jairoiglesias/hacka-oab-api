@@ -194,8 +194,13 @@ function processRuleValidator(wksResponse, dadosSolicitacao, authMecan){
 
         console.log('Promises de regras de validacao resolvidas com sucesso!')
 
+        // console.log('===================================')
+        // console.log(wksResponse)
+        // console.log(dadosSolicitacao)
+        // console.log('===================================')
+
         // Recupera o ID da regra
-        let idRule = getRuleIDDefinition(wksResponse, dadosSolicitacao, authMecan)
+        let idRule = getRuleIDDefinition(wksResponse, _dadosSolicitacao, authMecan)
 
         // const data = {
         //   idRule: ID_RULE,
@@ -220,8 +225,11 @@ function processRuleValidator(wksResponse, dadosSolicitacao, authMecan){
 
         }).catch((error)=>{
           
+          console.log('==============================================')
           console.log('Erro na requisicao da validacao de regras')
           console.log(error.response.status)
+          console.log(error)
+          console.log('==============================================')
           resolve()
 
         })
