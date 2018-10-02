@@ -1260,16 +1260,14 @@ module.exports = function(app) {
                 let arrayWKS = []
 
                 reqWKS.ocr.forEach((value, index) => {
-
                   arrayWKS.push(value.wks)
-
                 })
 
                 console.log('===================')
                 console.log(dadosSolicitacao)
                 console.log('===================')
 
-                m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao, authMecan).then((validation)=>{
+                m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao, reqWKS.ocr, authMecan).then((validation)=>{
 
                   reqWKS.validation = validation
 

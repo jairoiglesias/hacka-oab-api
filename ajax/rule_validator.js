@@ -17,7 +17,7 @@ const cloudant = Cloudant({
 })
 
 let ruleIDMap = [
-  {id: '4bbe53e2dbb349a9b341e3baba0754ae', ruleName: 'CORREIOS'},
+  {id: '4bbe53e2dbb349a9b341e3baba0754ae', ruleName: 'NC_Correios'},
   {id: '17ac8fab76f84ea18ac7019271127438', ruleName: 'DIF. CORREIOS + C/ PETICAO + S/ PROT.'},
   {id: '5da71fcbd04c4a7696d4b4f1793dadfe', ruleName: 'DIF. CORREIOS + S/PETICAO'},
   {id: '8c4d261fb4454ff9a9e45c2fc84b13e0', ruleName: 'DIF. CORREIOS + C/ PETICAO + PROTOCOLADA'}
@@ -28,14 +28,15 @@ const DOC_NAME = 'petição'
 
 // Recupera o ID de regra efetuando parse dos valores contidos no WKS/NLU e dadosSolicitacao
 
-function getRuleIDDefinition(wksResponse, dadosSolicitacao, authMecan){
+function getRuleIDDefinition(wksResponse, dadosSolicitacao, ocrData, authMecan){
 
   if(dadosSolicitacao.tipo_gasto == TIPO_GASTO){
     return ruleIDMap.filter(item => item.ruleName == TIPO_GASTO)[0]
   }
   else{
-    let peticaoExiste = wksResponse.filter((wksData) => {
-      return wksData.name == DOC_NAME
+
+    let peticaoExiste = ocrData.filter((ocrItem) => {
+      return ocrItem.name == DOC_NAME
     })
 
     if(peticaoExiste.length == 0){
@@ -214,6 +215,7 @@ function processRuleValidator(wksResponse, dadosSolicitacao, authMecan){
         console.log('Parametros do EndPoint de Validacao de Regras!')
         console.log(data)
         console.log('****************')
+        process.exit()
         
         post(VALIDATOR_URL, data).then((response)=>{
           
