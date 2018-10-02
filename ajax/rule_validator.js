@@ -31,7 +31,7 @@ const DOC_NAME = 'petição'
 function getRuleIDDefinition(wksResponse, dadosSolicitacao, ocrData, authMecan){
 
   if(dadosSolicitacao.tipo_gasto == TIPO_GASTO){
-    return ruleIDMap.filter(item => item.ruleName == TIPO_GASTO)[0]
+    return ruleIDMap.filter(item => item.ruleName == TIPO_GASTO)[0].id
   }
   else{
 
@@ -40,14 +40,14 @@ function getRuleIDDefinition(wksResponse, dadosSolicitacao, ocrData, authMecan){
     })
 
     if(peticaoExiste.length == 0){
-      return ruleIDMap.filter(item => item.ruleName == 'DIF. CORREIOS + S/PETICAO')[0]
+      return ruleIDMap.filter(item => item.ruleName == 'DIF. CORREIOS + S/PETICAO')[0].id
     }
     else{
       if(authMecan){
-        return ruleIDMap.filter(item => item.ruleName == 'DIF. CORREIOS + C/ PETICAO + PROTOCOLADA')[0]
+        return ruleIDMap.filter(item => item.ruleName == 'DIF. CORREIOS + C/ PETICAO + PROTOCOLADA')[0].id
       }
       else{
-        return ruleIDMap.filter(item => item.ruleName == 'DIF. CORREIOS + C/ PETICAO + S/ PROT.')[0]
+        return ruleIDMap.filter(item => item.ruleName == 'DIF. CORREIOS + C/ PETICAO + S/ PROT.')[0].id
       }
     }
 
