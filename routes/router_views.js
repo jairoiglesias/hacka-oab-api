@@ -1267,9 +1267,10 @@ module.exports = function(app) {
                 console.log(dadosSolicitacao)
                 console.log('===================')
 
-                m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao, reqWKS.ocr, authMecan).then((validation)=>{
+                m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao, reqWKS.ocr, authMecan).then((validationResp)=>{
 
-                  reqWKS.validation = validation
+                  reqWKS.validation = validationResp.validationData
+                  reqWKS.ruleName = validationResp.ruleName
 
                   console.log('Validação de regras finalizada!')
 
@@ -1297,11 +1298,9 @@ module.exports = function(app) {
                 
               })
 
-
             })
 
           }
-
 
         })
 
