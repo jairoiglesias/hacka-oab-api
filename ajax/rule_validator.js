@@ -152,11 +152,6 @@ function processRuleValidator(wksResponse, dadosSolicitacao, ocrData, authMecan)
                   
                   if (dbItem){
                     const text = dbItem.text;
-                    
-                    // return {
-                    //   idField: value._id,
-                    //   value: text
-                    // }
   
                     inputs.push({
                       idField: value._id,
@@ -183,7 +178,22 @@ function processRuleValidator(wksResponse, dadosSolicitacao, ocrData, authMecan)
 
           })
 
-          Promise.all([promiseDadosSolicitacao, promiseWks]).then(() => {
+          let promiseAuthMechan = new Promise((resolve, reject) => {
+
+            if(value.title == 'autenticacao_mecanica'){
+              
+              inputs.push({
+                idField: value._id,
+                value: authMecan
+              })
+
+              resolve()
+
+            }
+
+          })
+
+          Promise.all([promiseDadosSolicitacao, promiseWks, promiseAuthMechan]).then(() => {
             resolve()
           })
 
