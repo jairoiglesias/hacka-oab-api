@@ -32,6 +32,43 @@ function authMecanExists(ocrText){
   return pattern.test(ocrText)
 }
 
+function authMecanExistsV2(ocrData, cb){
+
+  if(ocrData == ''){
+    cb()
+  }
+
+  let _dataArray = ocrData.toString().split('\n')
+
+  let isAuthenticated = false
+  
+  _dataArray.forEach((lineData, lineIndex) => {
+      
+      let totalNumbers = 0;
+      let _lineData = lineData.replace(' ', '')
+      let tamLineData = _lineData.length
+      
+      for(var i=0;i <= tamLineData;i++){
+          let char = _lineData[i]
+          if(!isNaN(char)) totalNumbers++;
+      }
+
+      // console.log(lineData)
+      // console.log('tam: '+tamLineData)
+      // console.log(totalNumbers)
+      // console.log('======================')
+      
+      if(totalNumbers >= 30 && totalNumbers <= 45 && tamLineData <= 60){
+          console.log('###')
+          isAuthenticated = true
+      }
+
+  })
+
+  cb(isAuthenticated)
+
+}
+
 // Versão usando Tesseract
 function processaOCRLote(result, index, reqWKS, callback){
 
@@ -1201,7 +1238,8 @@ module.exports = function(app) {
 
               }
 
-              let authMecan = false      
+              // let authMecan = false 
+              let ocrDataPeticao = ''     
               
               // Associa os nomes dos documentos no array principal
               reqWKS.ocr = reqWKS.ocr.map((ocrItem, ocrIndex) => {
@@ -1224,11 +1262,9 @@ module.exports = function(app) {
                 // Se peticao foi localizada tenta procurar a existencia de autenticação mecanica
 
                 if(ocrItem.name == 'petição'){
-                  authMecan = authMecanExists(ocrItem.ocrData)
-                  // console.log('Autenticacao mecanica avaliada')
-                  // console.log(ocrItem.ocrData)
-                  // console.log(authMecan)
-                  // process.exit()
+
+                  ocrDataPeticao = ocrItem.ocrData
+
                 }
                 
                 return ocrItem
@@ -1236,66 +1272,74 @@ module.exports = function(app) {
               })
               
               console.log(reqWKS.ocr)
-              
-              // DEBUG
-              // console.log('finalizado')
-              // res.app.io.to(socketId).emit('msg', 'finish')
-              
-              console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
-              
-              let m_WKS = require('./../ajax/wks.js')
-              
-              m_WKS.processWKSv4(reqWKS.ocr, (err) => {
 
-                console.log('Processamento WKS finalizado')
-                console.log("*******************************")
+              authMecanExistsV2(ocrDataPeticao, (isAuthenticated) => {
 
-                if(err){
-                  console.log('WKS ERROR')
-                  status = 'WKS erro'
-                }
+                let authMecan = isAuthenticated
 
-                console.log('Iniciando validação de regras')
+                reqWKS.authMecan = authMecan
                 
-                let arrayWKS = []
-
-                reqWKS.ocr.forEach((value, index) => {
-                  arrayWKS.push(value.wks)
-                })
-
-                console.log('===================')
-                console.log(dadosSolicitacao)
-                console.log('===================')
-
-                m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao, reqWKS.ocr, authMecan).then((validationResp)=>{
-
-                  reqWKS.validation = validationResp.validationData
-                  reqWKS.ruleName = validationResp.ruleName
-
-                  console.log('Validação de regras finalizada!')
-
-                  // Salva os dados no MongoDb
-                  let reg = {
-                    uuid: _uuid,
-                    status: status,
-                    created: new Date(),
-                    ocr: reqWKS,
-                    ocrParser: {
-                      invalidPages, docFound, docNotFound
-                    },
-                    urls: [
-                      urlStorage
-                    ]
+                // DEBUG
+                // console.log('finalizado')
+                // res.app.io.to(socketId).emit('msg', 'finish')
+                
+                console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
+                
+                let m_WKS = require('./../ajax/wks.js')
+                
+                m_WKS.processWKSv4(reqWKS.ocr, (err) => {
+  
+                  console.log('Processamento WKS finalizado')
+                  console.log("*******************************")
+  
+                  if(err){
+                    console.log('WKS ERROR')
+                    status = 'WKS erro'
                   }
+  
+                  console.log('Iniciando validação de regras')
                   
-                  db.collection('analise_ocr').insert(reg, (err, records) => {
-                    if(err) throw err
-                    console.log('Registro inserido no MongoDb')
-                    res.app.io.to(socketId).emit('msg', 'finish')
+                  let arrayWKS = []
+  
+                  reqWKS.ocr.forEach((value, index) => {
+                    arrayWKS.push(value.wks)
                   })
-
+  
+                  console.log('===================')
+                  console.log(dadosSolicitacao)
+                  console.log('===================')
+  
+                  m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao, reqWKS.ocr, authMecan).then((validationResp)=>{
+  
+                    reqWKS.validation = validationResp.validationData
+                    reqWKS.ruleName = validationResp.ruleName
+  
+                    console.log('Validação de regras finalizada!')
+  
+                    // Salva os dados no MongoDb
+                    let reg = {
+                      uuid: _uuid,
+                      status: status,
+                      created: new Date(),
+                      ocr: reqWKS,
+                      ocrParser: {
+                        invalidPages, docFound, docNotFound
+                      },
+                      urls: [
+                        urlStorage
+                      ]
+                    }
+                    
+                    db.collection('analise_ocr').insert(reg, (err, records) => {
+                      if(err) throw err
+                      console.log('Registro inserido no MongoDb')
+                      res.app.io.to(socketId).emit('msg', 'finish')
+                    })
+  
+                  })
+                  
                 })
-                
+
               })
 
             })
