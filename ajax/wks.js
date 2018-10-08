@@ -238,6 +238,10 @@ function processWKSv4(ocr, cb){
 
     if(ocrData.ocrData.length > 0){
 
+      console.log('Enviando OCR para analise NLU')
+      console.log(postData)
+      console.log('==================================')
+
       // Define dados para POST
       let postData = {
         pageIndex: ocrData.resPageIndex,
