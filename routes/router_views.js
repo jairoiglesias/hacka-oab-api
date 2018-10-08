@@ -946,6 +946,7 @@ module.exports = function(app) {
 
                 if(err){
                   console.log('WKS ERROR')
+                  console.log(err)
                   status = 'WKS erro'
                 }
 
