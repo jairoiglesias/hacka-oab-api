@@ -72,9 +72,15 @@ function gCloudTextOCRFromPDF(uuid, pdfBaseName){
     
         const gcsSourceUri = `gs://${BUCKET_NAME}/dokia_uploads/${uuid}/${pdfBaseName}`;
         const gcsDestinationUri = `gs://${BUCKET_NAME}/dokia_uploads/${uuid}/${fileNameDest}.json`;
-    
+        
+        /* 
+
+            Configura o Google Vision para que efetue a leitura de um arquivo
+            a partir do Storage
+
+        */
+
         const inputConfig = {
-            // Supported mime_types are: 'application/pdf' and 'image/tiff'
             mimeType: 'application/pdf',
             gcsSource: {
                 uri: gcsSourceUri,
@@ -154,18 +160,22 @@ function gCloudTextOCRFromPDF(uuid, pdfBaseName){
                                 let ocr = []
                                 let jsonObj = JSON.parse(response.body)
 
+                                /* 
+                                    Percorre o JSON resultante do OCR para recuperar 
+                                    somente o texto extraído de cada pagina do PDF
+                                */
+
                                 jsonObj.responses.forEach((result) => {
 
                                     const fullTextAnnotation = result.fullTextAnnotation;
                                     const context = result.context
 
                                     let ocrData = fullTextAnnotation == null ? null : fullTextAnnotation.text
-                                    // ocrData = ocrData.replace(/\n/g, String.fromCharCode(10))
-
                                     let resPageIndex = context == null ? null : context.pageNumber
-
+                                    
                                     ocr.push({
-                                        ocrData, resPageIndex
+                                        ocrData, 
+                                        resPageIndex
                                     })
                                     
                                 })
@@ -173,7 +183,8 @@ function gCloudTextOCRFromPDF(uuid, pdfBaseName){
                                 resolve({
                                    fileName: file.name,
                                    url: urls[0],
-                                   ocr
+                                   ocr,
+                                   jsonObj
                                 })
 
                             })

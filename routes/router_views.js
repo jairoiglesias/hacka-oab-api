@@ -24,52 +24,154 @@ m_connectDb().then(function(dbInstance){
   db = dbInstance
 })
 
-function authMecanExists(ocrText){
+/*
+  Verifica se autenticação mecanica existe analisando padrões de texto
+*/
 
-  // var pattern = /\w{2,3}\s{1}\w{3,4}\,{0,1}\.{0,1}\s{0,1}\d{2}\.{1}\d{8}\-?\w{1}\s{1}\w{6}\s{1}\w{3,4}/
-  var pattern = /\w{2,3}\s{1}\w{3,4}\,{0,1}\.{0,1}\s{0,1}\d{2}\.{1}\d{8}\-{0,1}\w{1}\s{1}\w{5,6}\s{1}.{2,4}/
+function checkAuthMechanExitsByExpression(ocrData){
 
-  return pattern.test(ocrText)
+  return new Promise((resolve, reject) => {
+
+    if(ocrData == ''){
+      resolve(false)
+    }
+    
+    let _dataArray = ocrData.toString().split('\n')
+  
+    let isAuthenticated = false
+    let arrayTotalNumbers = []
+    
+    _dataArray.some((lineData, lineIndex) => {
+      
+      let totalSpaces = lineData.split(' ').length
+      let _lineData = lineData.replace(/\s/g, '')
+      let totalNumbers = 0;
+      let totalLineData = _lineData.length
+        
+      for(var i=0;i <= totalLineData;i++){
+  
+        let char = _lineData[i]
+  
+        if(!isNaN(parseInt(char))) totalNumbers++;
+        
+      }
+  
+      let regex =  /^[0-9a-zA-Z -]+[\.]/
+      let validString = regex.test(lineData)
+  
+      arrayTotalNumbers.push(totalNumbers)
+  
+      console.log(lineData)
+      console.log(_lineData)
+      console.log('tam: '+totalLineData)
+      console.log(totalNumbers)
+      console.log('spaces: '+totalSpaces)
+      
+      isAuthenticated = (totalNumbers >= 20 && totalNumbers <= 45 && totalLineData <= 60 && totalSpaces >= 4 && validString == true)
+      
+      console.log(isAuthenticated)
+      console.log('validString: ' + validString)
+      console.log('======================')
+  
+      if(isAuthenticated) return true
+    })
+  
+    console.log(arrayTotalNumbers)
+    console.log('**********************')
+
+    resolve(isAuthenticated)
+
+  })
 }
 
-function authMecanExistsV2(ocrData, cb){
+/*
 
-  if(ocrData == ''){
-    cb()
-  }
+  Verifica se autenticação mecanica existe analisando os valores X e Y
+  dos caracteres identificados pelo Google Vision
 
-  let _dataArray = ocrData.toString().split('\n')
+*/
 
+function checkAuthMechanExitsByCalcBondary(jsonObj, ocrIndex){
+
+  const VALUE_X = 0.855
+  const MAX_VERTICES_FOUND = 4
+  let vertices = []
   let isAuthenticated = false
+
+  return new Promise((resolve, reject) => {
+
+    jsonObj.responses.forEach((response) => {
+
+      let curPageIndex = response.context.pageNumber
+
+      if(curPageIndex == ocrIndex){
+
+        let page = response.fullTextAnnotation.pages[0]
   
-  _dataArray.forEach((lineData, lineIndex) => {
-      
-      let totalNumbers = 0;
-      let _lineData = lineData.replace(' ', '')
-      let tamLineData = _lineData.length
-      
-      for(var i=0;i <= tamLineData;i++){
-          let char = _lineData[i]
-          if(!isNaN(char)) totalNumbers++;
+        page.blocks.forEach((block) => {
+  
+          block.paragraphs[0].boundingBox.normalizedVertices.forEach((vertice) => {
+            
+            if(vertice.x >= VALUE_X){
+              vertices.push(vertice)
+            }
+
+          })
+  
+        })
+
       }
 
-      // console.log(lineData)
-      // console.log('tam: '+tamLineData)
-      // console.log(totalNumbers)
-      // console.log('======================')
-      
-      if(totalNumbers >= 30 && totalNumbers <= 45 && tamLineData <= 60){
-          console.log('###')
-          isAuthenticated = true
-      }
+    })
+
+    console.log('Vertices Peticao')
+    console.log(vertices)
+
+    if(vertices.length >= MAX_VERTICES_FOUND){
+      isAuthenticated = true
+    }
+
+    resolve(isAuthenticated)
 
   })
 
-  cb(isAuthenticated)
+}
+
+/*
+
+  Identifica a existencia de autenticação mecanica em um documento
+
+*/
+
+function authMecanExistsV2(ocrData, ocrIndex, jsonObj, cb){
+
+  if(ocrData == ''){
+    cb(false)
+  }
+
+  let promiseCheckAuthMechanExitsByCalcBondary = checkAuthMechanExitsByCalcBondary(jsonObj, ocrIndex)
+  let promiseCheckAuthMechanExitsByExpression = checkAuthMechanExitsByExpression(ocrData)
+
+  Promise.all([promiseCheckAuthMechanExitsByCalcBondary, promiseCheckAuthMechanExitsByExpression]).then(results => {
+    
+    console.log('Promise All Finished')
+    console.log(results)
+
+    let isAuthenticated = false
+
+    if(results[0] == true){
+      isAuthenticated = true
+    }
+
+    console.log('isAuthenticated: ' + isAuthenticated)
+
+    cb(isAuthenticated)
+
+  })
 
 }
 
-// Versão usando Tesseract
+// Versão com processamento via Tesseract
 function processaOCRLote(result, index, reqWKS, callback){
 
   // ### Inicia o procedimento de analise OCR ###
@@ -119,7 +221,7 @@ function processaOCRLote(result, index, reqWKS, callback){
 
 }
 
-// Versão com Google Cloud Vision
+// Versão com processamento via Google Cloud Vision
 function processaOCRLoteV2(result, reqWKS, originalnameRaw, callback){
 
   // ### Inicia o procedimento de analise OCR ###
@@ -194,43 +296,9 @@ function processaOCRLoteV2(result, reqWKS, originalnameRaw, callback){
 
 module.exports = function(app) {
 
+  // Config Multer
   var upload = multer({ 
     dest: 'uploads/' 
-  })
-
-
-  app.get('/teste', (req, res) => {
-    res.send('teste')
-  })
-
-  // app.get('/teste2', (req, res) => {
-
-  //   var url = 'https://www.scoresolv.com.br/feedbackdokia'
-
-  //   var requestOptions = {
-  //     method: 'GET',
-  //     resolveWithFullResponse: true,
-  //     uri: url
-  //   }
-
-  //   rp(requestOptions).then((response) => {
-
-  //     let body = response.body
-
-  //     res.send(body)
-
-  //   })
-
-  // })
-
-  app.post('/teste_post', upload.any(), (req, res) => {
-
-    // console.log(req.body)
-    // console.log('*************************')
-    console.log(req.files)
-    console.log('*************************')
-
-    res.send('teste')
   })
 
   app.get('/upload_doc', (req, res) => {
@@ -241,449 +309,12 @@ module.exports = function(app) {
     res.render('analise')
   })
 
-  app.get('/get_image/:imagem', (req, res) => {
-    
-    var imagem = req.params.imagem
-
-    var imagemPath = './ajax/output/'+imagem
-
-    // Configura o retorno do content
-    res.set('Content-Type', 'image/png')
-
-    // Efetua leitura da imagem
-    fs.readFile(imagemPath, function(err, data) {
-
-      if(err) throw err
-      
-      res.send(data)
-      
-    })
-
-  })
-
-  app.get('/lista_imagens', (req, res) => {
-
-    fs.readdir('./ajax/output', (err, items) => {
-      res.send(items)
-    })
-
-  })
-
-  app.post('/upload_image', upload.any(), (req, res) => {
-
-    console.log('Iniciando extracao de imagens do PDF')
-    console.log(new Date())
-    console.log("==============================")
-
-    dadosNLU = []
-    dadosAnalise = []
-
-    console.log('variavel docSend:')
-    console.log(req.body.docSend)
-    console.log('==============================')
-    console.log('Arquivos de PDF via Upload:')
-    console.log(req.files)
-    console.log('==============================')
-
-    dadosFront = req.body.docSend
-
-    // Cria objeto JSON que sera usado para envio de requisicao
-    var reqWKS = {
-      ocr: []
-    }
-
-    // Guarda o nome original do arquivo sem extensao
-    var originalname = req.files[0].originalname
-    var originalnameRaw = originalname.split('.')[0]
-
-    var file = req.files[0].path
-
-    function processaOCRLoteV2(imagePath, reqWKS, callback){
-
-      // ### Inicia o procedimento de analise OCR ###
-
-      var ocr = require('./../ajax/gcloud_vision.js')
-
-      const promises = []
-
-      var promise = new Promise((resolve, reject) => {
-        
-        console.log('Iniciando OCR Google Cloud da imagem ' + imagePath)
-        
-        ocr.gCloudTextOCR(imagePath, 0, function(index, ocrData){
-
-          console.log(ocrData)
-
-          var originalnameRawNumber = originalnameRaw+'_' + (index + 1)
-          var newFileNameText = './uploads/'+originalnameRaw+'_' + (index + 1) + '.txt'
-
-          // Limpa espaços e quebras de linha
-          ocrData = ocrData.replace(/(\r\n|\n|\r)/gm," ");
-          ocrData = ocrData.replace(/\s+/g," ");
-
-          console.log("Salvando OCR em arquivo ...")
-          console.log(newFileNameText)
-          console.log("---------------------------------------------------")
-
-          fs.writeFile(newFileNameText, ocrData, function(err){
-
-            if(err) throw err
-
-            console.log('Extração de dados da imagem realizada com sucesso')
-            console.log(index)
-
-            var _ocrData = originalnameRawNumber+' |||| ' + ocrData
-            
-            reqWKS.ocr.push(_ocrData)
-
-            resolve()
-
-          })
-
-          
-        })
-
-      })
-        
-      promises.push(promise)
-
-      // Aguarda a resolução de todas as promises
-      Promise.all(promises).then(() => {
-
-        console.log("=============================================")
-        console.log("All Promises finished!")
-        console.log("=============================================")
-        callback()
-        
-      })
-
-    }
-
-    // Efetua o processamento OCR das imagens
-    processaOCRLoteV2(file, reqWKS, function(){
-
-      console.log('Finalizado OCR Google Cloud')
-      console.log(new Date())
-      console.log("==============================")
-
-      if(reqWKS.ocr.length == 0){
-
-        res.send('Finalizado com OCR vazio')
-
-      }
-      else{
-
-        console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
-        // res.send('Finalizado com sucesso')
-        res.send(reqWKS)
-
-        reqWKS.ocr.forEach(function(ocrData, ocrIndex){
-
-          var url = 'https://dokia77.mybluemix.net/process'
-
-          var requestOptions = {
-            method: 'POST',
-            resolveWithFullResponse: true,
-            uri: url,
-            json: true,
-            body: {
-              "texto": ocrData
-            }
-          }
-
-          rp(requestOptions).then(function(response){
-
-            console.log('OCR index: ' + ocrIndex + ' => Requisicao a EndPoint enviado com sucesso!')
-            console.log(response.body)
-            console.log("===================================")
-            
-            if(ocrIndex == (reqWKS.ocr.length - 1)){
-
-              res.send('Finalizado com sucesso')
-
-            }
-
-          }).catch(function(err){
-
-            console.log('Erro EndPoint Handled !')
-            console.log(err.error)
-
-            if(ocrIndex == (reqWKS.ocr.length - 1)){
-
-              res.send('Finalizado com Erro')
-
-            }
-
-          })
-
-        })
-
-      }
-
-    })
-
-
-    
-    
-  })
-
-  app.post('/upload_doc_old', upload.any(), (req, res) => {
-
-    console.log('Iniciando extracao de imagens do PDF')
-    console.log(new Date())
-    console.log("==============================")
-
-    let fileNameUpload = ''
-    let dadosFront = ''
-    let dadosNLU = []
-    let dadosAnalise = []
-
-    console.log('variavel docSend:')
-    console.log(req.body.docSend)
-    console.log('==============================')
-    console.log('Arquivos de PDF via Upload:')
-    console.log(req.files)
-    console.log('==============================')
-
-    dadosFront = req.body.docSend
-
-    // Cria objeto JSON que sera usado para envio de requisicao
-    var reqWKS = {
-      ocr: []
-    }
-
-    // Guarda o nome original do arquivo sem extensao
-    var originalname = req.files[0].originalname
-    var originalnameRaw = originalname.split('.')[0]
-
-    fileNameUpload = originalnameRaw
-    
-    var file = req.files[0].path
-
-    // Finaliza a requisicao
-    // res.send('1')
-
-    var newFileNameImage = './uploads/'+originalnameRaw+'/'+originalname
-    var newFolderName = './uploads/'+originalnameRaw
-
-    // Cria o diretorio para guardar o PDF
-    fs.mkdir(newFolderName, (err) => {
-      
-      if(err){
-        console.log(err)
-      }
-      else{
-        console.log('dir created')
-      }
-      
-      // Renomeia o arquivo para o novo diretorio
-      fs.rename(file, newFileNameImage,  (err) => {
-        
-        if (err) throw err;
-        
-        console.log('renamed complete');
-
-        var name = req.files[0].originalname
-        name = name.replace('pdf', 'txt')
-        
-        // ### Inicia o procedimento de conversão do PDF para formato de imagem ###
-
-        var m_pdf2img = require('./../ajax/pdf2img.js')
-
-        console.log('Iniciando a conversão do PDF para imagens')
-
-        m_pdf2img.convertPdf2Img(newFileNameImage, (result) => {
-
-          console.log('Finalizado extracao de imagens do PDF')
-          console.log(new Date())
-          console.log("==============================")
-
-          function processaOCRLote(result, index, reqWKS, callback){
-
-            // ### Inicia o procedimento de analise OCR ###
-
-            var ocr = require('./../ajax/test_tesseract.js')
-
-            // console.log(result.message[index])
-            
-            var imagePath = result.message[index].path
-
-            console.log('Iniciando OCR Tesseract da imagem ' + imagePath)
-
-            ocr.extractSingleImage(imagePath, function(ocrData){
-
-              console.log(ocrData)
-
-              var originalnameRawNumber = originalnameRaw+'_' + (index + 1)
-              var newFileNameText = './uploads/'+originalnameRaw+'/'+originalnameRaw+'_' + (index + 1) + '.txt'
-
-              // ocrData = ocrData.replace(String.fromCharCode(10), '').replace(String.fromCharCode(13), '')
-              ocrData = ocrData.replace(/(\r\n|\n|\r)/gm," ");
-              ocrData = ocrData.replace(/\s+/g," ");
-
-              fs.writeFile(newFileNameText, ocrData, function(err){
-
-                if(err) throw err
-
-                console.log('Extração de dados da imagem realizada com sucesso')
-                console.log(index)
-
-                var _ocrData = originalnameRawNumber+' |||| ' + ocrData
-                
-                reqWKS.ocr.push(_ocrData)
-
-                if(index == (result.message.length - 1)){
-                  callback()
-                }
-                else{
-                  var newIndex = index + 1
-                  processaOCRLote(result, newIndex, reqWKS, callback)
-                }
-
-              })
-              
-            })
-
-
-          }
-
-          function processaOCRLoteV2(result, reqWKS, callback){
-
-            // ### Inicia o procedimento de analise OCR ###
-
-            var ocr = require('./../ajax/gcloud_vision.js')
-
-            let totalImagens = result.message.length
-
-            const promises = []
-
-            for(var index = 0; index < totalImagens; index++){
-
-              var promise = new Promise((resolve, reject) => {
-
-                var imagePath = result.message[index].path
-                
-                console.log('Iniciando OCR Google Cloud da imagem ' + imagePath)
-                
-                ocr.gCloudTextOCR(imagePath, index, function(index, ocrData){
-
-                  console.log(ocrData)
-
-                  var originalnameRawNumber = originalnameRaw+'_' + (index + 1)
-                  var newFileNameText = './uploads/'+originalnameRaw+'/'+originalnameRaw+'_' + (index + 1) + '.txt'
-
-                  // ocrData = ocrData.replace(String.fromCharCode(10), '').replace(String.fromCharCode(13), '')
-                  ocrData = ocrData.replace(/(\r\n|\n|\r)/gm," ");
-                  ocrData = ocrData.replace(/\s+/g," ");
-
-                  console.log("Salvando OCR em arquivo ...")
-                  console.log(newFileNameText)
-                  console.log("---------------------------------------------------")
-
-                  fs.writeFile(newFileNameText, ocrData, function(err){
-
-                    if(err) throw err
-
-                    console.log('Extração de dados da imagem realizada com sucesso')
-                    console.log(index)
-
-                    var _ocrData = originalnameRawNumber+' |||| ' + ocrData
-                    
-                    reqWKS.ocr.push(_ocrData)
-
-                    resolve()
-
-                  })
-
-                  
-                })
-
-              })
-              
-              promises.push(promise)
-
-            }
-
-            Promise.all(promises).then(() => {
-
-              console.log("=============================================")
-              console.log("All Promises finished!")
-              console.log("=============================================")
-              callback()
-              
-            })
-
-          }
-
-          // Efetua o processamento OCR das imagens
-          processaOCRLoteV2(result, reqWKS, function(){
-
-            console.log('Finalizado OCR Google Cloud')
-            console.log(new Date())
-            console.log("==============================")
-
-            if(reqWKS.ocr.length == 0){
-
-              res.send('Finalizado com sucesso')
-
-            }
-            else{
-
-              console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
-
-              reqWKS.ocr.forEach(function(ocrData, ocrIndex){
-
-                var url = 'https://dokia77.mybluemix.net/process'
-
-                var requestOptions = {
-                  method: 'POST',
-                  resolveWithFullResponse: true,
-                  uri: url,
-                  json: true,
-                  body: {
-                    "texto": ocrData
-                  }
-                }
-
-                rp(requestOptions).then(function(response){
-
-                  console.log('OCR index: ' + ocrIndex + ' => Requisicao a EndPoint enviado com sucesso!')
-                  console.log(response.body)
-                  console.log("===================================")
-                  
-                  if(ocrIndex == (reqWKS.ocr.length - 1)){
-
-                    // res.send('Finalizado com sucesso')
-
-                  }
-
-                }).catch(function(err){
-
-                  console.log('Erro EndPoint Handled !')
-                  console.log(err.error)
-
-                  if(ocrIndex == (reqWKS.ocr.length - 1)){
-
-                    // res.send('Finalizado com sucesso')
-
-                  }
-
-                })
-
-              })
-
-            }
-
-          })
-
-        })
-
-      })
-
-    })
-    
-    
-  })
+  /* 
+  
+    Versão que utiliza a conversão de PDF para Imagem localmente antes
+    de enviar pro serviço do Google Vision
+
+  */
 
   app.post('/process_ocr', upload.any(), (req, res) => {
 
@@ -1012,6 +643,12 @@ module.exports = function(app) {
     
   })
 
+  /*
+
+    Versão que utiliza processamento de OCR do Google Vision usando a tecnica de solicitar
+    um pedido de OCR a partir de um arquivo pelo Storage
+
+  */
   app.post('/process_ocr_v2', upload.any(), (req, res) => {
 
     let _uuid = uuid.v4()
@@ -1174,6 +811,7 @@ module.exports = function(app) {
           else{
 
             reqWKS.ocr = result.ocr
+            let jsonObj = result.jsonObj
 
             // Prepara a execução do OCR Parser para analisar os textos
             let promisesOcrParser = reqWKS.ocr.map((ocrItem, ocrIndex) => {
@@ -1239,8 +877,8 @@ module.exports = function(app) {
 
               }
 
-              // let authMecan = false 
-              let ocrDataPeticao = ''     
+              let ocrDataPeticao = ''  
+              let ocrIndexPeticao = 0   
               
               // Associa os nomes dos documentos no array principal
               reqWKS.ocr = reqWKS.ocr.map((ocrItem, ocrIndex) => {
@@ -1260,12 +898,11 @@ module.exports = function(app) {
                   ocrItem.name = filter[0].itens.length == 0 ? '' : filter[0].itens[0].name
                 }
 
-                // Se peticao foi localizada tenta procurar a existencia de autenticação mecanica
+                // Se peticao foi localizada guarda o OCR deste para posterior validacao de autenticacao mecanica
 
                 if(ocrItem.name == 'petição'){
-
                   ocrDataPeticao = ocrItem.ocrData
-
+                  ocrIndexPeticao = ocrItem.resPageIndex
                 }
                 
                 return ocrItem
@@ -1273,12 +910,16 @@ module.exports = function(app) {
               })
               
               console.log(reqWKS.ocr)
+              console.log('======================')
+              // console.log(ocrDataPeticao)
+              // console.log(ocrIndexPeticao)
+              // process.exit()
 
-              authMecanExistsV2(ocrDataPeticao, (isAuthenticated) => {
+              authMecanExistsV2(ocrDataPeticao, ocrIndexPeticao, jsonObj, (isAuthenticated) => {
 
-                let authMecan = isAuthenticated
-
-                reqWKS.authMecan = authMecan
+                reqWKS.authMecan = isAuthenticated
+                
+                let authMecan = isAuthenticated == true ? true : ''
                 
                 // DEBUG
                 // console.log('finalizado')
@@ -1311,8 +952,8 @@ module.exports = function(app) {
                   console.log('===================')
   
                   m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao, reqWKS.ocr, authMecan).then((validationResp)=>{
-  
-                    reqWKS.validation = validationResp.validationData
+                    
+                    reqWKS.validation = validationResp == undefined ? null : validationResp.validationData
                     reqWKS.ruleName = validationResp.ruleName
   
                     console.log('Validação de regras finalizada!')
@@ -1357,6 +998,11 @@ module.exports = function(app) {
     
   })
 
+  /*
+  
+    Processamento Massivo somente usando o serviço de OCR do Google Vision
+
+  */
   app.post('/process_ocr_v3', upload.any(), (req, res) => {
 
     let _uuid = req.body.uuid
@@ -1775,95 +1421,6 @@ module.exports = function(app) {
 
   })
 
-  app.get('/get_image_page_old/:uuid/:index', (req, res) => {
-
-    var uuid = req.params.uuid
-    var index = req.params.index
-
-    var imagemPath = `./uploads/${uuid}/page_${index}.png`
-
-    console.log('Recuperando imagem ...')
-    console.log(imagemPath)
-
-    // Efetua leitura da imagem
-    fs.readFile(imagemPath, function(err, data) {
-
-      if(err){
-        res.set('CatossiHub', 'PauNoCuDeQuemLeu heuehueheu')
-        res.send(err)
-      }
-      else{
-        // Configura o retorno do content
-        res.set('Content-Type', 'image/png')
-        res.send(data)
-      }
-      
-    })
-
-  })
-
-  app.get('/get_image_page_old/:uuid/:index', (req, res) => {
-
-    var uuid = req.params.uuid
-    var index = req.params.index
-
-    var fileName = `page_${index}.png`
-
-    db.collection('analise_ocr').findOne({"uuid": uuid}, (err, records) => {
-
-      if(err) throw err
-      
-      let urls = records.urls
-
-      if(urls == undefined){
-        res.send('Não existe storage de arquivos para este UUID')
-      }
-      else{
-
-        let item = urls.filter((urlData) => {
-          return urlData.fileItem == fileName
-        })
-
-        // console.log(item)
-
-        if(item.length == 0){
-          res.send('Não existe imagem válida para esta pagina!')
-        }
-        else{
-
-          let url = item[0].url
-  
-          // res.send(url)
-  
-          // Efetua o download do PDF
-          let requestOptions = {
-            method: 'GET',
-            resolveWithFullResponse: true,
-            uri: url,
-            encoding: "binary",
-            // headers: {
-            //   'Content-Type': 'image/png'
-            // },
-            // rejectUnauthorized: false
-          }
-  
-          rp(requestOptions).then((response) => {
-  
-            let body = response.body
-  
-            res.writeHead(200, {'Content-Type': 'image/png' });
-            res.end(body, 'binary');
-  
-          })
-
-        }
-
-      }
-
-    })
-
-  })
-
   app.get('/get_pdf/:uuid/', (req, res) => {
 
     var uuid = req.params.uuid
@@ -1948,153 +1505,6 @@ module.exports = function(app) {
     db.collection('analise_ocr').find({created: {$gte: start, $lt: end}}).toArray((err, results) => {
       if(err) throw err;
       res.send(results)
-    })
-
-  })
-
-  app.get('/get_upload_doc/:fileName', (req, res) => {
-
-    var fileName = req.params.fileName
-
-    var params = {
-        Bucket: bucketName,
-        Key: fileName
-    }
-
-    s3.getObject(params, function(err, data) {
-      
-      if(err){
-        console.log(err, err.stack)
-      }
-      else{
-
-        console.log(data);
-        console.log(data.Body.toString());
-
-        res.send(data.Body.toString())
-      
-    }
-    
-    })
-
-  })
-
-  app.get('/get_all_files', (req, res) => {
-
-    var AllFiles = []
-    var files = fs.readdirSync('./uploads/')
-
-    var ip = require('ip').address()
-
-    console.log(files.length)
-
-    for(var i in files) {
-      
-      var subFiles = fs.readdirSync('./uploads/' + files[i])
-
-      for(var j in subFiles){
-        if(subFiles[j].indexOf('txt') != -1){
-
-        }
-        AllFiles.push('http://' + ip + ':3001/uploads/' + files[i] + '/' + subFiles[j])
-      }
-
-    }
-
-    res.send(AllFiles)
-
-  })
-
-  app.get('/uploads/:dir/:file', (req, res) => {
-
-    var dir = req.params.dir
-    var file = req.params.file
-
-
-    // res.download(req.path)
-    console.log(req.path)
-    console.log(dir, file)
-
-  })
-
-  // Callback invocado pelo NodeRed com os dados do NLU
-
-  app.post('/callback_nlu', function(req, res){
-
-    var msg = req.body
-
-    dadosNLU.push(msg)
-
-    console.log('URL de callback invocado pelo serviço NodeRed do NLU')
-    console.log(msg)
-    console.log('=====================================')
-    console.log('Enviado dados para EndPoint do Python no Heroku')
-
-    // Monta o JSON contendo os dados do Front + Processamento NLU
-    var reg = {
-      base: dadosFront,
-      doc: msg
-    }
-
-    // Submete os dados para o EndPoint do que valida as regras
-
-    var url = 'https://dokia-validation.herokuapp.com/'
-
-    var requestOptions = {
-      method: 'POST',
-      resolveWithFullResponse: true,
-      uri: url,
-      json: true,
-      body: reg
-    }
-
-    rp(requestOptions).then(function(response){
-
-      var body = response.body
-
-      dadosAnalise.push(body)
-
-      var resp = {
-        fileNameUpload, dadosFront, dadosNLU, dadosAnalise
-      }
-
-      db.collection('analise_ocr').insertOne(resp, function(err, results){
-
-        if(err) throw err
-        console.log('1 document investor inserted')
-        
-        console.log(body)
-        res.send(body)
-
-      })
-
-    })
-    
-  })
-
-  app.get('/response_upload', (req, res) => {
-
-    db.collection('analise_ocr').find().toArray(function(err, results){
-
-      if(err) throw err
-
-      console.log(results)
-      res.send(results)
-
-    })
-
-  })
-
-  // Devolve o ultimo processamento de PDF
-  app.get('/last_response_upload', (req, res) => {
-
-    db.collection('analise_ocr').find().sort({"_id": -1}).limit(1).toArray(function(err, results){
-
-      if(err) throw err
-
-      console.log(results)
-      res.send(results)
-
     })
 
   })

@@ -313,6 +313,7 @@ block content
                 else{
 
                     $('#date_time_upload_batch').text('Inicio: ' + new Date().toLocaleString())
+                    $('#status_upload_batch').text('Processando ...')
 
                     uuid = window.uuid()
 
@@ -329,8 +330,6 @@ block content
                         formData.append('file_doc', file);
                         formData.append('socket_id', socket.id)
                         formData.append('uuid', uuid)
-
-                        $('#status_upload_batch').text('Processando ...')
                         
                         // Envia ajax para processar o upload
                         let promise = new Promise((resolve, reject) => {
