@@ -180,16 +180,23 @@ function processRuleValidator(wksResponse, dadosSolicitacao, ocrData, authMecan)
 
           let promiseAuthMechan = new Promise((resolve, reject) => {
 
-            if(value.title == 'autenticacao_mecanica'){
-              
-              inputs.push({
-                idField: value._id,
-                value: authMecan
-              })
+            if(authMecan == true){
 
-              resolve()
-
+              if(value.title == 'autenticacao_mecanica'){
+                
+                inputs.push({
+                  idField: value._id,
+                  value: ""
+                })
+  
+                resolve()
+  
+              }
             }
+            else{
+              resolve()
+            }
+
 
           })
 
