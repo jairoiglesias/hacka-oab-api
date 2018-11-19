@@ -4,27 +4,31 @@ let documentWordKeys = [
         mapKeys: [
             {
                 keys: ['guia', 'número', 'documento', 'banco', 'valor', 'total', '´processo', 'vencimento', 'agência', 'código', 'pagador', 'autentica'],
-                percAcc: 90
+                percAcc: 80
             },
             {
                 keys: ['guia', 'recolhimento', 'pedido', 'nome', 'cpf', 'rg', 'processo', 'valor', 'total', 'código'],
-                percAcc: 90
+                percAcc: 80
             },
             {
                 keys: ['guia', 'processo', 'valor', 'total', 'código', 'autentica', 'número', 'série', 'emissão', 'desarquivamento'],
-                percAcc: 90
+                percAcc: 80
             },
             {
                 keys: ['guia', 'número', 'documento', 'banco', 'valor', 'vencimento', 'agência', 'código', 'pagador', 'autentica'],
-                percAcc: 90
+                percAcc: 80
             },
             {
                 keys: ['guia', 'recolhimento', 'autentica', 'valor', 'processo', 'natureza', 'juizo', 'comarca', 'receita'],
-                percAcc: 90
+                percAcc: 80
             },
             {
                 keys: ['guia', 'requerente', 'autentica', 'valor', 'processo', 'natureza', 'comarca', 'arrecadação'],
-                percAcc: 90
+                percAcc: 80
+            },
+            {
+                keys: ['dare', 'data', 'autentica', 'valor', 'fazenda', 'vencimento', 'receita', 'arrecadação'],
+                percAcc: 80
             }
         ]
     },
@@ -33,22 +37,22 @@ let documentWordKeys = [
         mapKeys: [
             {
                 keys: ['comprovante', 'banco', 'valor', 'barras', 'autentica', 'total'],
-                percAcc: 90
+                percAcc: 80
             },{
                 keys: ['comprovante', 'data', 'transação', 'autentica', 'valor', 'agência'],
-                percAcc: 90
+                percAcc: 80
             },
             {
                 keys: ['comprovante', 'data', 'chave', 'segurança', 'vencimento', 'valor'],
-                percAcc: 90
+                percAcc: 80
             },
             {
                 keys: ['comprovante', 'banco', 'valor', 'barras', 'autentica', 'conta'],
-                percAcc: 90
+                percAcc: 80
             },
             {
                 keys: ['comprovante', 'correios', 'valor', 'cep', 'destino', 'caixa'],
-                percAcc: 90
+                percAcc: 80
             },
             {
                 keys: ['valor', 'cep', 'operador', 'postagem', 'peso', 'dimensoes', 'preco', 'comprovante', 'cliente'],
@@ -102,7 +106,15 @@ let documentWordKeys = [
             {
                 keys: ['paradeiro', 'processo', 'requer', 'deferimento', 'bacenjud', 'oab'],
                 percAcc: 70
-            }
+            },
+            {
+                keys: ['ação', 'processo', 'movida', 'requerer', 'procurador', 'adquiriu'],
+                percAcc: 80
+            },
+            {
+                keys: ['ação', 'execução', 'procurador', 'deferimento', 'requerer', 'oficial'],
+                percAcc: 80
+            },
         ]
     },
     {
@@ -123,6 +135,10 @@ let documentWordKeys = [
             {
                 keys: ['processo', 'partes', 'movimenta', 'executado', 'exequente', 'http', 'consulta'],
                 percAcc: 80
+            },
+            {
+                keys: ['processo', 'partes', 'petição', 'protocolo', 'http', 'consulta'],
+                percAcc: 80
             }
         ]
     },
@@ -131,6 +147,15 @@ let documentWordKeys = [
         mapKeys: [
             {
                 keys: ['processo', 'exequente', 'executado', 'intimação', 'valor', 'causa', 'classe', 'assunto'],
+                percAcc: 80
+            }
+        ]
+    },
+    {
+        name: 'autenticação eletronica',
+        mapKeys: [
+            {
+                keys: ['processo', 'eletrônico', 'assinatura', 'eletrônica'],
                 percAcc: 80
             }
         ]

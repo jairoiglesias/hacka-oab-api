@@ -17,7 +17,7 @@ let m_connectDb = require('./../libs/connectdb')
 let db = ''
 
 let docNames = [
-  'guia', 'comprovante', 'petição', 'determinação judicial', 'print tj'
+  'guia', 'comprovante', 'petição', 'determinação judicial', 'print tj', 'autenticação eletronica'
 ]
 
 m_connectDb().then(function(dbInstance){
@@ -303,10 +303,6 @@ module.exports = function(app) {
 
   app.get('/upload_doc', (req, res) => {
     res.render('upload_doc')
-  })
-
-  app.get('/analise', (req, res) => {
-    res.render('analise')
   })
 
   /* 
@@ -793,11 +789,11 @@ module.exports = function(app) {
       // Salva o PDF no Google Cloud Storage
       m_gCloudStorage.gCloudStorageSubmit(_uuid, pdfBaseName).then((urlStorage) => {
 
-        // Efetua o processamento OCR diretamente do PDF no Storage
         var m_gCloudVision = require('./../ajax/gcloud_vision.js')
         
         console.log('Iniciando extração de texto do PDF')
 
+        // Efetua o processamento OCR diretamente do PDF no Storage
         m_gCloudVision.gCloudTextOCRFromPDF(_uuid, pdfBaseName).then((result) => {
 
           console.log('Google Cloud Vision PDF Extraction Success!')
@@ -916,6 +912,11 @@ module.exports = function(app) {
               // process.exit()
 
               authMecanExistsV2(ocrDataPeticao, ocrIndexPeticao, jsonObj, (isAuthenticated) => {
+
+                // Tenta verificar se foi encontrada a pagina de Autenticação Eletrônica
+                if(!isAuthenticated){
+                  isAuthenticated = docFound.indexOf('autenticação eletronica') == -1 ? false : true
+                }
 
                 reqWKS.authMecan = isAuthenticated
                 
@@ -1283,6 +1284,7 @@ module.exports = function(app) {
 
   })
 
+  // Salva o ID de um processamento batch
   app.post('/save_upload_batch', (req, res) => {
 
     let uuid = req.body.uuid
@@ -1304,6 +1306,7 @@ module.exports = function(app) {
 
   })
 
+  // Carrega os ultimos 5 lote de processamento massivo
   app.get('/get_last_5_uploads_batch', (req, res) => {
 
     db.collection('last_uploads_batch').find().sort({_id: -1}).limit(5).toArray((err, results) => {
@@ -1314,6 +1317,7 @@ module.exports = function(app) {
 
   })
 
+  // Recupera um lote massivo processado em formato zip
   app.get('/get_download_upload_batch/:uuid', (req, res) => {
 
     let uuid = req.params.uuid
@@ -1421,6 +1425,7 @@ module.exports = function(app) {
 
   })
 
+  // Devolve um arquivo PDF
   app.get('/get_pdf/:uuid/', (req, res) => {
 
     var uuid = req.params.uuid
