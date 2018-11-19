@@ -51,6 +51,15 @@ let documentWordKeys = [
                 percAcc: 80
             },
             {
+                keys: ['comprovante', 'bradesco', 'barras', 'pagador', 'sacador', 'data', 'transação', 'valor', 'autentica', 'multa', 'juros', 'agência'],
+                percAcc: 80
+            }
+        ]
+    },
+    {
+        name: 'correios',
+        mapKeys: [
+            {
                 keys: ['comprovante', 'correios', 'valor', 'cep', 'destino', 'caixa'],
                 percAcc: 80
             },
@@ -61,10 +70,6 @@ let documentWordKeys = [
             {
                 keys: ['valor', 'cep', 'operador', 'postagem', 'peso', 'objeto', 'contrato', 'atendimento', 'cidade'],
                 percAcc: 60
-            },
-            {
-                keys: ['comprovante', 'bradesco', 'barras', 'pagador', 'sacador', 'data', 'transação', 'valor', 'autentica', 'multa', 'juros', 'agência'],
-                percAcc: 80
             }
         ]
     },

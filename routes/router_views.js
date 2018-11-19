@@ -17,7 +17,7 @@ let m_connectDb = require('./../libs/connectdb')
 let db = ''
 
 let docNames = [
-  'guia', 'comprovante', 'petição', 'determinação judicial', 'print tj', 'autenticação eletronica'
+  'guia', 'comprovante', 'petição', 'determinação judicial', 'print tj', 'autenticação eletronica', 'correios'
 ]
 
 m_connectDb().then(function(dbInstance){
@@ -919,7 +919,7 @@ module.exports = function(app) {
                 }
 
                 reqWKS.authMecan = isAuthenticated
-                
+
                 let authMecan = isAuthenticated == true ? true : ''
                 
                 // DEBUG
