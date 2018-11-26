@@ -952,7 +952,7 @@ module.exports = function(app) {
                   console.log(dadosSolicitacao)
                   console.log('===================')
   
-                  m_ruleValidator.processRuleValidator(arrayWKS, dadosSolicitacao, reqWKS.ocr, authMecan).then((validationResp)=>{
+                  m_ruleValidator.processRuleValidatorV2(arrayWKS, dadosSolicitacao, reqWKS.ocr, authMecan).then((validationResp)=>{
                     
                     reqWKS.validation = validationResp == undefined ? null : validationResp.validationData
                     reqWKS.ruleName = validationResp.ruleName
