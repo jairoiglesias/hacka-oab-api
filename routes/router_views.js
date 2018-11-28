@@ -11,6 +11,7 @@ var rmdir = require('rimraf');
 // Carrega modulos customizados
 let m_ocrParser = require('./../ajax/ocr_parser.js')
 let m_gCloudStorage = require('./../ajax/gcloud_storage')
+let m_WKS = require('./../ajax/wks.js')
 let m_ruleValidator = require('./../ajax/rule_validator')
 
 let m_connectDb = require('./../libs/connectdb')
@@ -641,8 +642,7 @@ module.exports = function(app) {
 
   /*
 
-    Versão que utiliza processamento de OCR do Google Vision usando a tecnica de solicitar
-    um pedido de OCR a partir de um arquivo pelo Storage
+    Versão que utiliza processamento de OCR do Google Vision a partir de um arquivo PDF armazenado no Storage
 
   */
   app.post('/process_ocr_v2', upload.any(), (req, res) => {
@@ -861,16 +861,11 @@ module.exports = function(app) {
               let status = ''
 
               if (invalidPages.length != 0){
-
                 console.log('Não foram identificados documentos em algumas paginas')
-
                 status = 'Existem documentos inválidos'
-
               }
               else{
-
                 status = 'finish'
-
               }
 
               let ocrDataPeticao = ''  
@@ -907,9 +902,6 @@ module.exports = function(app) {
               
               console.log(reqWKS.ocr)
               console.log('======================')
-              // console.log(ocrDataPeticao)
-              // console.log(ocrIndexPeticao)
-              // process.exit()
 
               authMecanExistsV2(ocrDataPeticao, ocrIndexPeticao, jsonObj, (isAuthenticated) => {
 
@@ -922,22 +914,45 @@ module.exports = function(app) {
 
                 let authMecan = isAuthenticated == true ? true : ''
                 
-                // DEBUG
-                // console.log('finalizado')
-                // res.app.io.to(socketId).emit('msg', 'finish')
+                console.log('Enviando os dados de OCR para EndPoint do NLU para analise')
                 
-                console.log('Enviando os dados de OCR para EndPoint do NLU/WKS para analise')
+                // Cria uma nova instancia de NLU
+                let NLU = new m_WKS.NLU()
                 
-                let m_WKS = require('./../ajax/wks.js')
-                
-                m_WKS.processWKSv4(reqWKS.ocr, (err) => {
+                NLU.executeNLU(reqWKS.ocr, (err, nluResponse) => {
   
-                  console.log('Processamento WKS finalizado')
+                  console.log('Processamento NLU finalizado')
                   console.log("*******************************")
   
                   if(err){
-                    console.log('WKS ERROR')
-                    status = 'WKS erro'
+                    console.log('NLU ERROR')
+                    status = 'NLU erro'
+                  }
+                  else{
+
+                    if(nluResponse.length > 0){
+
+                      // Associa o resultado da NLU aos items de OCR correspondentes
+                      console.log('Associando NLU Response in OCR Data')
+
+                      let newOCR = reqWKS.ocr.map(function(ocrData) {
+              
+                        var nluCur = nluResponse.filter((page)=>{
+                          return page.pageIndex == ocrData.resPageIndex
+                        })
+                        
+                        if(nluCur.length != 0){
+                          ocrData.wks = nluCur[0].NLU
+                        }
+                        
+                        return ocrData
+                        
+                      })
+                      
+                      reqWKS.ocr = newOCR
+
+                    }
+
                   }
   
                   console.log('Iniciando validação de regras')

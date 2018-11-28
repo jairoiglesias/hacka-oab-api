@@ -230,14 +230,11 @@ function processWKSv3(ocr, cb){
 // Efetua o processamento de WKS enviando todo os OCR já com o nome dos documentos identificados em um unico Array 
 function processWKSv4(ocr, cb){
 
-  console.log(typeof ocr)
-
   let ocrDataFull = []
 
   ocr.forEach((ocrData, ocrIndex) => {
 
     if(ocrData.ocrData.length > 0){
-
       
       // Define dados para POST
       let postData = {
@@ -246,9 +243,9 @@ function processWKSv4(ocr, cb){
         ocrData: ocrData.ocrData
       }
       
-      console.log('Enviando OCR para analise NLU')
-      console.log(postData)
-      console.log('==================================')
+      // console.log('Enviando OCR para analise NLU')
+      // console.log(postData)
+      // console.log('==================================')
 
       ocrDataFull.push(postData)
     }
@@ -319,6 +316,79 @@ function processWKSv4(ocr, cb){
 
 }
 
+// Efetua o processamento de WKS enviando todo os OCR já com o nome dos documentos identificados em um unico Array 
+function NLU(){
+
+  this.executeNLU = function(ocr, cb){
+
+    let ocrDataFull = []
+  
+    ocr.forEach((ocrData, ocrIndex) => {
+  
+      if(ocrData.ocrData.length > 0){
+        
+        // Define dados para POST
+        let postData = {
+          pageIndex: ocrData.resPageIndex,
+          pageName: ocrData.name,
+          ocrData: ocrData.ocrData
+        }
+        
+        // console.log('Enviando OCR para analise NLU')
+        // console.log(postData)
+        // console.log('==================================')
+        
+        ocrDataFull.push(postData)
+      }
+  
+    })
+  
+    let urlWKS = 'https://gama-dokia-ai-backend.mybluemix.net/classifica/v2'
+    
+    let requestOptions = {
+      method: 'POST',
+      resolveWithFullResponse: true,
+      uri: urlWKS,
+      json: true,
+      body: ocrDataFull
+    }
+  
+    console.log('['+arguments.callee.name+'] Processando ...')
+  
+    rp(requestOptions).then(function(wksResponse){
+  
+      let result = wksResponse.body
+      
+      console.log('##############################################')
+      console.log(wksResponse.statusCode)
+      console.log(result)
+      console.log(result.length)
+      console.log('##############################################')
+  
+      if(wksResponse.statusCode == 200){
+        cb(null, result)
+      }
+      else{
+        cb('erro', null)
+      }
+  
+    }).catch(function(err){
+  
+      console.log('Erro EndPoint NLU !')
+      console.log(err)
+  
+      cb(err)
+  
+    })
+
+  }
+
+}
+
 module.exports = {
-    processWKS, processWKSv2, processWKSv3, processWKSv4
+    processWKS, 
+    processWKSv2, 
+    processWKSv3, 
+    processWKSv4,
+    NLU
 }
