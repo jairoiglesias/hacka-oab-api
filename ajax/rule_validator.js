@@ -481,7 +481,210 @@ function processRuleValidatorV2(wksResponse, dadosSolicitacao, ocrData, authMeca
 
 }
 
+function RuleValidator(){
+
+  this.execute = function(wksResponse, dadosSolicitacao, ocrData, authMecan){
+
+    return new Promise((resolve, reject) => {
+  
+      console.log('['+arguments.callee.name+'] Processando ...')
+      console.log('==============================================')
+      
+      // Normaliza os dados de solicitação se necessário
+  
+      let _dadosSolicitacao = ''
+  
+      if(dadosSolicitacao == undefined){
+        console.log('dadosSolicitacao nao recebidos ... Usando MOCK !!!')
+        _dadosSolicitacao = MOCK_SOLICITACAO
+      }
+      else{
+        console.log('dadosSolicitacao recebidos com sucesso !!!')
+        _dadosSolicitacao = (typeof dadosSolicitacao == 'object') ? dadosSolicitacao : JSON.parse(dadosSolicitacao)
+      }
+  
+      let inputs = []
+      let promiseParseCloudant = new Promise((resolve, reject) => {
+  
+        let tamDadosSolicitacao = Object.keys(_dadosSolicitacao).length
+        let tamWks = wksResponse.length
+  
+        console.log(ruleDataStorage)
+        console.log(typeof ruleDataStorage)
+  
+        ruleDataStorage.forEach((value, index) => {
+  
+          // Recupera os ID de regra referentes aos dados de solicitação
+  
+          let promiseDadosSolicitacao = new Promise((resolve, reject) => {
+  
+            Object.keys(_dadosSolicitacao).forEach((solicData, solicIndex) => {
+  
+              // console.log(solicData)
+              // console.log(value.title)
+              // console.log('############################')
+              
+              if(String(solicData) == String(value.title)){
+  
+                console.log('------------------------------')
+                console.log('achou item')
+                console.log(solicData)
+                console.log(value)
+                console.log('------------------------------')
+  
+                inputs.push({
+                  idField: value._id,
+                  value: _dadosSolicitacao[solicData]
+                })
+  
+              }
+  
+              // console.log('==========')
+              // console.log(tamDadosSolicitacao)
+              // console.log(solicIndex)
+              // console.log('==========')
+  
+              if(tamDadosSolicitacao == (solicIndex + 1)){
+                
+                resolve()
+              }
+  
+            })
+  
+          })
+          
+  
+          let promiseWks = new Promise((resolve, reject) => {
+  
+            wksResponse.forEach((wksData, wksIndex) => {
+  
+              if(wksData != undefined){
+  
+                let entities = wksData.entities
+  
+                if(entities){
+                  
+                  const [dbItem] = entities.filter(({type}) => type === value.title)
+                  
+                  if (dbItem){
+                    const text = dbItem.text;
+  
+                    inputs.push({
+                      idField: value._id,
+                      value: text
+                    })
+      
+                  }
+  
+                }
+  
+              }
+  
+              // console.log('==========')
+              // console.log(tamWks)
+              // console.log(wksIndex)
+              // console.log('==========')
+  
+              if(tamWks == (wksIndex + 1)){
+                
+                resolve()
+              }
+              
+            })
+  
+          })
+  
+          let promiseAuthMechan = new Promise((resolve, reject) => {
+  
+            if(authMecan == true){
+  
+              if(value.title == 'autenticacao_mecanica'){
+                
+                inputs.push({
+                  idField: value._id,
+                  value: ""
+                })
+  
+                resolve()
+  
+              }
+            }
+            else{
+              resolve()
+            }
+  
+  
+          })
+  
+          Promise.all([promiseDadosSolicitacao, promiseWks, promiseAuthMechan]).then(() => {
+            resolve()
+          })
+  
+        })
+  
+      })
+  
+      promiseParseCloudant.then(() => {
+  
+        console.log('Promises de regras de validacao resolvidas com sucesso!')
+  
+        // Recupera o ID da regra
+        let rule = getRuleIDDefinition(wksResponse, _dadosSolicitacao, ocrData, authMecan)
+  
+        const data = {
+          idRule: rule.id, 
+          inputs: inputs
+        }
+  
+        console.log('Parametros do EndPoint de Validacao de Regras!')
+        console.log(data)
+        console.log('****************')
+
+        let requestOptions = {
+          method: 'POST',
+          uri: VALIDATOR_URL,
+          body: data,
+          json: true
+        }
+        
+        // post(VALIDATOR_URL, data).then((response) => {
+
+        rp(requestOptions).then((response) => {
+          
+          console.log('response ruleValidator')
+          console.log(response.body)
+  
+          // return response;
+  
+          let resp = {
+            validationData: response.body,
+            ruleName: rule.ruleName
+          }
+          
+          resolve(resp)
+  
+        }).catch((error) => {
+          
+          console.log('==============================================')
+          console.log('Erro na requisicao da validacao de regras')
+          console.log(error.response.status)
+          console.log(error)
+          console.log('==============================================')
+          resolve()
+  
+        })
+  
+  
+      })
+  
+    })
+
+  }
+
+}
+
 module.exports = {
   processRuleValidator,
-  processRuleValidatorV2
+  processRuleValidatorV2,
+  RuleValidator
 }

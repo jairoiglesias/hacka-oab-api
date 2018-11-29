@@ -18,7 +18,13 @@ let m_connectDb = require('./../libs/connectdb')
 let db = ''
 
 let docNames = [
-  'guia', 'comprovante', 'petição', 'determinação judicial', 'print tj', 'autenticação eletronica', 'correios'
+  'guia', 
+  'comprovante', 
+  'petição', 
+  'determinação judicial', 
+  'print tj', 
+  'autenticação eletronica', 
+  'correios'
 ]
 
 m_connectDb().then(function(dbInstance){
@@ -728,8 +734,6 @@ module.exports = function(app) {
         // Guarda o nome original do arquivo sem extensao
         var originalname = req.files[0].originalname
         var originalnameRaw = originalname.split('.')[0]
-
-        fileNameUpload = originalnameRaw
         
         var file = req.files[0].path
 
@@ -819,7 +823,7 @@ module.exports = function(app) {
             Promise.all(promisesOcrParser).then((ocrParseResult) => {
 
               console.log('Ocr Parser feito com sucesso')
-              console.log(JSON.stringify(ocrParseResult))
+              // console.log(JSON.stringify(ocrParseResult))
 
               // Identifica quais documentos foram identificados
 
@@ -962,16 +966,14 @@ module.exports = function(app) {
                   reqWKS.ocr.forEach((value, index) => {
                     arrayWKS.push(value.wks)
                   })
+
+                  let RuleValidator = new m_ruleValidator.RuleValidator()
   
-                  console.log('===================')
-                  console.log(dadosSolicitacao)
-                  console.log('===================')
-  
-                  m_ruleValidator.processRuleValidatorV2(arrayWKS, dadosSolicitacao, reqWKS.ocr, authMecan).then((validationResp)=>{
+                  RuleValidator.execute(arrayWKS, dadosSolicitacao, reqWKS.ocr, authMecan).then((validationResp)=>{
                     
                     reqWKS.validation = validationResp == undefined ? null : validationResp.validationData
                     reqWKS.ruleName = validationResp.ruleName
-  
+                    
                     console.log('Validação de regras finalizada!')
   
                     // Salva os dados no MongoDb
