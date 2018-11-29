@@ -923,7 +923,7 @@ module.exports = function(app) {
                 // Cria uma nova instancia de NLU
                 let NLU = new m_WKS.NLU()
                 
-                NLU.executeNLU(reqWKS.ocr, (err, nluResponse) => {
+                NLU.executeNLU(reqWKS.ocr, _uuid, (err, nluResponse) => {
   
                   console.log('Processamento NLU finalizado')
                   console.log("*******************************")
@@ -986,7 +986,7 @@ module.exports = function(app) {
                   RuleValidator.executeV2(arrayWKS, dadosSolicitacao, reqWKS.ocr, authMecan).then((validationResp)=>{
 
                     // DEBUG SAVE MONGODB POST
-                    
+
                     let temp = {
                       pdfBaseName,
                       arrayWKS,

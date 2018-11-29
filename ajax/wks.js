@@ -319,7 +319,7 @@ function processWKSv4(ocr, cb){
 // Efetua o processamento de WKS enviando todo os OCR já com o nome dos documentos identificados em um unico Array 
 function NLU(){
 
-  this.executeNLU = function(ocr, cb){
+  this.executeNLU = function(ocr, uuid, cb){
 
     let ocrDataFull = []
   
@@ -331,7 +331,8 @@ function NLU(){
         let postData = {
           pageIndex: ocrData.resPageIndex,
           pageName: ocrData.name,
-          ocrData: ocrData.ocrData
+          ocrData: ocrData.ocrData,
+          uuid
         }
         
         // console.log('Enviando OCR para analise NLU')

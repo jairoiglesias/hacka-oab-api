@@ -10,13 +10,13 @@ const VALIDATOR_URL = 'https://dokia-rules.mybluemix.net/api/validator'
 
 let MOCK_SOLICITACAO = {"id_solicitacao_cliente":"56098356","carteira":"Santander NPL1","origem":"A","agencia_fornecedor":"Ferreira e Chagas Advogados","devedor":"DEOCLECIO APARECIDO PARAIZO","nro_operacao_sistema":"33537205","nro_operacao":"620334073010263","setor":"PCJ","tipo":"GASTO","autorizacao":"","nro_despesa":"","data_gasto":"2018-02-07","tipo_gasto":"NC_Correios","moeda":"R$","valor":"19.70","status_pagamento":"Carregado","data_aprovacao":"2018-03-20","id_juizo":"","id_reclamo":"\r\n","cnpj":"11111111111","razao_social":"santander"}
 
-const cloudant = Cloudant({
-  "username": "96ba32ad-e17d-494f-a93e-72240b1e0b16-bluemix",
-  "password": "e373c010bcb53c3ea89a59f7fa2642789e7bfe3128bab1c3e2762b713ab04641",
-  "host": "96ba32ad-e17d-494f-a93e-72240b1e0b16-bluemix.cloudant.com",
-  "port": 443,
-  "url": "https://96ba32ad-e17d-494f-a93e-72240b1e0b16-bluemix:e373c010bcb53c3ea89a59f7fa2642789e7bfe3128bab1c3e2762b713ab04641@96ba32ad-e17d-494f-a93e-72240b1e0b16-bluemix.cloudant.com"
-})
+// const cloudant = Cloudant({
+//   "username": "96ba32ad-e17d-494f-a93e-72240b1e0b16-bluemix",
+//   "password": "e373c010bcb53c3ea89a59f7fa2642789e7bfe3128bab1c3e2762b713ab04641",
+//   "host": "96ba32ad-e17d-494f-a93e-72240b1e0b16-bluemix.cloudant.com",
+//   "port": 443,
+//   "url": "https://96ba32ad-e17d-494f-a93e-72240b1e0b16-bluemix:e373c010bcb53c3ea89a59f7fa2642789e7bfe3128bab1c3e2762b713ab04641@96ba32ad-e17d-494f-a93e-72240b1e0b16-bluemix.cloudant.com"
+// })
 
 let ruleIDMap = [
   {id: '4bbe53e2dbb349a9b341e3baba0754ae', ruleName: 'NC_Correios'},
@@ -78,9 +78,9 @@ function getRulesData(){
 
     ruleDataStorage = eval(response.body)
 
-    setTimeout(() => {
-      getRulesData()
-    }, TIMEOUT)
+    // setTimeout(() => {
+    //   getRulesData()
+    // }, TIMEOUT)
 
   })
 
