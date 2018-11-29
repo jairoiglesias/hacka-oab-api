@@ -681,6 +681,159 @@ function RuleValidator(){
 
   }
 
+  this.executeV2 = function(wksResponse, dadosSolicitacao, ocrData, authMecan){
+
+    return new Promise((resolve, reject) => {
+  
+      console.log('['+arguments.callee.name+'] Processando ...')
+      console.log('==============================================')
+      
+      // Normaliza os dados de solicitação se necessário
+  
+      let _dadosSolicitacao = ''
+  
+      if(dadosSolicitacao == undefined){
+        console.log('dadosSolicitacao nao recebidos ... Usando MOCK !!!')
+        _dadosSolicitacao = MOCK_SOLICITACAO
+      }
+      else{
+        console.log('dadosSolicitacao recebidos com sucesso !!!')
+        _dadosSolicitacao = (typeof dadosSolicitacao == 'object') ? dadosSolicitacao : JSON.parse(dadosSolicitacao)
+      }
+  
+      let inputs = []
+  
+      // console.log(ruleDataStorage)
+      // console.log(typeof ruleDataStorage)
+
+      ruleDataStorage.forEach((value, index) => {
+
+        // Recupera os ID de regra referentes aos dados de solicitação
+
+        Object.keys(_dadosSolicitacao).forEach((solicData, solicIndex) => {
+
+          // console.log(solicData)
+          // console.log(value.title)
+          // console.log('############################')
+          
+          if(String(solicData) == String(value.title)){
+
+            console.log('------------------------------')
+            console.log('achou item')
+            console.log(solicData)
+            console.log(value)
+            console.log('------------------------------')
+
+            inputs.push({
+              idField: value._id,
+              value: _dadosSolicitacao[solicData]
+            })
+
+          }
+
+          // console.log('==========')
+          // console.log(tamDadosSolicitacao)
+          // console.log(solicIndex)
+          // console.log('==========')
+
+        })
+        
+        // Recupera os ID de regra referente aos dados da NLU
+
+        wksResponse.forEach((wksData, wksIndex) => {
+
+          if(wksData != undefined){
+
+            let entities = wksData.entities
+
+            if(entities){
+              
+              const [dbItem] = entities.filter(({type}) => type === value.title)
+              
+              if (dbItem){
+                const text = dbItem.text;
+
+                inputs.push({
+                  idField: value._id,
+                  value: text
+                })
+  
+              }
+
+            }
+
+          }
+
+          // console.log('==========')
+          // console.log(tamWks)
+          // console.log(wksIndex)
+          // console.log('==========')
+          
+        })
+
+        
+        if(authMecan == true){
+
+          if(value.title == 'autenticacao_mecanica'){
+            inputs.push({
+              idField: value._id,
+              value: ""
+            })
+          }
+        }
+
+      })
+      
+      console.log('Enviando dados para Validação de Regras ...')
+  
+      // Recupera o ID da regra
+      let rule = getRuleIDDefinition(_dadosSolicitacao, ocrData, authMecan)
+
+      const data = {
+        idRule: rule.id, 
+        inputs: inputs
+      }
+
+      console.log('Parametros do EndPoint de Validacao de Regras!')
+      console.log(data)
+      console.log('****************')
+
+      // Envia os dados para o EndPoint de Validação de Regras
+      let requestOptions = {
+        method: 'POST',
+        uri: VALIDATOR_URL,
+        resolveWithFullResponse: true,
+        body: data,
+        json: true
+      }
+
+      rp(requestOptions).then((response) => {
+        
+        console.log('response ruleValidator')
+        console.log(response.body)
+
+        let resp = {
+          validationData: response.body,
+          ruleName: rule.ruleName
+        }
+        
+        resolve(resp)
+
+      }).catch((error) => {
+        
+        console.log('==============================================')
+        console.log('Erro na requisicao da validacao de regras')
+        console.log(error.response.status)
+        console.log(error)
+        console.log('==============================================')
+        resolve()
+
+      })    
+  
+    })
+
+  }
+
 }
 
 module.exports = {

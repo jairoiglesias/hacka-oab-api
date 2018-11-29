@@ -983,10 +983,10 @@ module.exports = function(app) {
 
                   let RuleValidator = new m_ruleValidator.RuleValidator()
   
-                  RuleValidator.execute(arrayWKS, dadosSolicitacao, reqWKS.ocr, authMecan).then((validationResp)=>{
+                  RuleValidator.executeV2(arrayWKS, dadosSolicitacao, reqWKS.ocr, authMecan).then((validationResp)=>{
 
                     // DEBUG SAVE MONGODB POST
-
+                    
                     let temp = {
                       pdfBaseName,
                       arrayWKS,
