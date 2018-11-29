@@ -967,20 +967,35 @@ module.exports = function(app) {
                     arrayWKS.push(value.wks)
                   })
 
+                  // DEBUG SAVE MONGODB PRE
+
+                  let temp = {
+                    pdfBaseName,
+                    arrayWKS,
+                    dadosSolicitacao,
+                    ocr: reqWKS.ocr
+                  }
+
+                  db.collection('rule_validator_log_pre').insert(temp, (err, records) => {
+                    if(err) throw err
+                    console.log('Rule Validor Log inserido no MongoDb')
+                  })
+
                   let RuleValidator = new m_ruleValidator.RuleValidator()
   
                   RuleValidator.execute(arrayWKS, dadosSolicitacao, reqWKS.ocr, authMecan).then((validationResp)=>{
 
-                    // DEBUG SAVE MONGODB
+                    // DEBUG SAVE MONGODB POST
 
                     let temp = {
+                      pdfBaseName,
                       arrayWKS,
                       dadosSolicitacao,
                       ocr: reqWKS.ocr,
-                      validationResp
+                      validationResp,
                     }
 
-                    db.collection('rule_validator_log').insert(temp, (err, records) => {
+                    db.collection('rule_validator_log_post').insert(temp, (err, records) => {
                       if(err) throw err
                       console.log('Rule Validor Log inserido no MongoDb')
                     })

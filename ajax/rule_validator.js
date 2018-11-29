@@ -33,7 +33,7 @@ const TIMEOUT = 60000
 
 // Recupera o ID de regra efetuando parse dos valores contidos no WKS/NLU e dadosSolicitacao
 
-function getRuleIDDefinition(wksResponse, dadosSolicitacao, ocrData, authMecan){
+function getRuleIDDefinition(dadosSolicitacao, ocrData, authMecan){
 
   if(dadosSolicitacao.tipo_gasto == TIPO_GASTO){
     return ruleIDMap.filter(item => item.ruleName == TIPO_GASTO)[0]
@@ -629,7 +629,7 @@ function RuleValidator(){
         console.log('Promises de regras de validacao resolvidas com sucesso!')
   
         // Recupera o ID da regra
-        let rule = getRuleIDDefinition(wksResponse, _dadosSolicitacao, ocrData, authMecan)
+        let rule = getRuleIDDefinition(_dadosSolicitacao, ocrData, authMecan)
   
         const data = {
           idRule: rule.id, 
@@ -640,6 +640,7 @@ function RuleValidator(){
         console.log(data)
         console.log('****************')
 
+        // Envia os dados para o EndPoint de Validação de Regras
         let requestOptions = {
           method: 'POST',
           uri: VALIDATOR_URL,
@@ -647,9 +648,7 @@ function RuleValidator(){
           body: data,
           json: true
         }
-        
-        // post(VALIDATOR_URL, data).then((response) => {
-        
+
         rp(requestOptions).then((response) => {
           
           console.log('response ruleValidator')
