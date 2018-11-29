@@ -814,7 +814,11 @@ function RuleValidator(){
 
         let resp = {
           validationData: response.body,
-          ruleName: rule.ruleName
+          ruleName: rule.ruleName,
+          wksResponse, 
+          dadosSolicitacao, 
+          ocrData, 
+          authMecan
         }
         
         resolve(resp)

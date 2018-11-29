@@ -989,10 +989,7 @@ module.exports = function(app) {
 
                     let temp = {
                       pdfBaseName,
-                      arrayWKS,
-                      dadosSolicitacao,
-                      ocr: reqWKS.ocr,
-                      validationResp,
+                      validationResp
                     }
 
                     db.collection('rule_validator_log_post').insert(temp, (err, records) => {
