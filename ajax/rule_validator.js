@@ -649,7 +649,7 @@ function RuleValidator(){
         }
         
         // post(VALIDATOR_URL, data).then((response) => {
-
+        
         rp(requestOptions).then((response) => {
           
           console.log('response ruleValidator')

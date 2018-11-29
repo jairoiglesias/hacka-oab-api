@@ -970,6 +970,20 @@ module.exports = function(app) {
                   let RuleValidator = new m_ruleValidator.RuleValidator()
   
                   RuleValidator.execute(arrayWKS, dadosSolicitacao, reqWKS.ocr, authMecan).then((validationResp)=>{
+
+                    // DEBUG SAVE MONGODB
+
+                    let temp = {
+                      arrayWKS,
+                      dadosSolicitacao,
+                      ocr: reqWKS.ocr,
+                      validationResp
+                    }
+
+                    db.collection('rule_validator_log').insert(temp, (err, records) => {
+                      if(err) throw err
+                      console.log('Rule Validor Log inserido no MongoDb')
+                    })
                     
                     reqWKS.validation = validationResp == undefined ? null : validationResp.validationData
                     reqWKS.ruleName = validationResp.ruleName
