@@ -643,6 +643,7 @@ function RuleValidator(){
         let requestOptions = {
           method: 'POST',
           uri: VALIDATOR_URL,
+          resolveWithFullResponse: true,
           body: data,
           json: true
         }
