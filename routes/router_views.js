@@ -66,9 +66,9 @@ function normalizeOCRDate(dateString){
           return _date
       }
       else{
-          _date = temp[2] + temp[3] + '/' + temp[0] + temp[1] + '/' + temp[4] + temp[5] + temp[6] + temp[7]
+          _date2 = temp[2] + temp[3] + '/' + temp[0] + temp[1] + '/' + temp[4] + temp[5] + temp[6] + temp[7]
 
-          parseDate = Date.parse(_date)
+          parseDate = Date.parse(_date2)
 
           if(!isNaN(parseDate)){
               return _date
@@ -98,7 +98,7 @@ function normalizeOCRDate(dateString){
               
               _date2 = temp[2] + '/' +  temp[3] +  temp[0] + '/' +  temp[1] + temp[4] + temp[5] + temp[6]
 
-              parseDate = Date.parse(_date)
+              parseDate = Date.parse(_date2)
 
               if(!isNaN(parseDate)){
                   return _date
@@ -1076,7 +1076,7 @@ module.exports = function(app) {
                     if(nluResponse.length > 0){
 
                       // Normaliza Datas e Valores se necessário
-                      
+
                       let newNLU = nluResponse.map((nluItem, nluIndex) => {
 
                         if(nluItem.NLU.entities != undefined){

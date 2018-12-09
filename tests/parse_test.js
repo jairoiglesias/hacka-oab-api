@@ -1,6 +1,6 @@
 
 
-var normalizeDate = function(dateString){
+function normalizeOCRDate(dateString){
 
     let temp = dateString.trim()
     temp = temp.replace(/[^0-9]/g, '');
@@ -143,5 +143,5 @@ console.log(_valor)
 
 console.log('=====')
 
-let _date = normalizeDate('23/52018')
+let _date = normalizeOCRDate('14/07/2017')
 console.log(_date)
