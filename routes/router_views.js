@@ -31,6 +31,143 @@ m_connectDb().then(function(dbInstance){
   db = dbInstance
 })
 
+function normalizeOCRValue(valueString){
+
+  let _newValue = valueString
+
+  let posComma = _newValue.indexOf(',')
+  let posDot = _newValue.indexOf('.')
+
+  if(posComma < posDot){
+    _newValue = _newValue.replace(',', '').replace('.', ',')
+  }
+  else if(_newValue.indexOf(',') == -1){
+    _newValue = _newValue.replace('.', ',')
+  }
+
+  return _newValue
+}
+
+function normalizeOCRDate(dateString){
+
+  let temp = dateString.trim()
+  temp = temp.replace(/[^0-9]/g, '');
+
+  let len = temp.length
+  let _date = ''
+  let parseDate = ''
+
+  if(len == 8){
+      _date = temp[0] + temp[1] + '/' + temp[2] + temp[3] + '/' + temp[4] + temp[5] + temp[6] + temp[7]
+
+      parseDate = Date.parse(_date)
+
+      if(!isNaN(parseDate)){
+          return _date
+      }
+      else{
+          _date = temp[2] + temp[3] + '/' + temp[0] + temp[1] + '/' + temp[4] + temp[5] + temp[6] + temp[7]
+
+          parseDate = Date.parse(_date)
+
+          if(!isNaN(parseDate)){
+              return _date
+          }
+          else{
+              return null
+          }
+      }
+
+  }
+  else if(len == 7){
+
+      _date = temp[0] + '/' + temp[1] + temp[2] + '/' + temp[3] + temp[4] + temp[5] + temp[6]
+
+      parseDate = Date.parse(_date)
+
+      if(!isNaN(parseDate)){
+          return _date
+      }
+      else{
+          _date = temp[0] + temp[1] + '/' + temp[2] + '/' +  temp[3] + temp[4] + temp[5] + temp[6]
+          
+          if(!isNaN(parseDate)){
+              return _date
+          }
+          else{
+              
+              _date2 = temp[2] + '/' +  temp[3] +  temp[0] + '/' +  temp[1] + temp[4] + temp[5] + temp[6]
+
+              parseDate = Date.parse(_date)
+
+              if(!isNaN(parseDate)){
+                  return _date
+              }
+              else{
+
+                  _date = temp[2] + temp[3] + '/' + temp[0] + '/' +  temp[1] + temp[4] + temp[5] + temp[6]
+
+                  parseDate = Date.parse(_date)
+
+                  if(!isNaN(parseDate)){
+                      return _date
+                  }
+                  else{
+                      return null
+                  }
+
+              }
+
+          }
+      }
+
+
+  }
+  else if(len == 6){
+
+      _date = temp[0] + temp[1] + '/' + temp[2] + temp[3] + '/' + temp[4] + temp[5]
+
+      parseDate = Date.parse(_date)
+
+      if(!isNaN(parseDate)){
+          return _date
+      }
+      else{
+          _date = temp[0] + '/' + temp[1] + '/' + temp[2] + temp[3] + temp[4] + temp[5]
+          
+          if(!isNaN(parseDate)){
+              return _date
+          }
+          else{
+              
+              _date2 = temp[2] + temp[3] + '/' + temp[0] + temp[1] + '/' + temp[4] + temp[5]
+
+              parseDate = Date.parse(_date)
+
+              if(!isNaN(parseDate)){
+                  return _date
+              }
+              else{
+
+                  _date = temp[2] + '/' + temp[3] + '/' + temp[0] + temp[1] + temp[4] + temp[5]
+
+                  parseDate = Date.parse(_date)
+
+                  if(!isNaN(parseDate)){
+                      return _date
+                  }
+                  else{
+                      return null
+                  }
+
+              }
+
+          }
+      }
+  }
+
+}
+
 /*
   Verifica se autenticação mecanica existe analisando padrões de texto
 */
@@ -823,7 +960,6 @@ module.exports = function(app) {
             Promise.all(promisesOcrParser).then((ocrParseResult) => {
 
               console.log('Ocr Parser feito com sucesso')
-              // console.log(JSON.stringify(ocrParseResult))
 
               // Identifica quais documentos foram identificados
 
@@ -930,11 +1066,47 @@ module.exports = function(app) {
   
                   if(err){
                     console.log('NLU ERROR')
+                    console.log(err)
+
                     status = 'NLU erro'
+                    
                   }
                   else{
 
                     if(nluResponse.length > 0){
+
+                      // Normaliza Datas e Valores se necessário
+                      
+                      let newNLU = nluResponse.map((nluItem, nluIndex) => {
+
+                        if(nluItem.NLU.entities != undefined){
+
+                          let newEntities = nluItem.NLU.entities.map((entityItem, entityIndex) => {
+  
+                            let type = entityItem.type
+  
+                            if(type.indexOf('data') != -1){
+                              
+                              let _data = normalizeOCRDate(entityItem.text)
+                              entityItem.text = _data
+                              
+                            }
+
+                            if(type.indexOf('valor') != -1){
+                              let _valor = normalizeOCRValue(entityItem.text)
+                              entityItem.text = _valor
+                            }
+                            
+                            return entityItem
+  
+                          })
+
+                          nluItem.NLU.entities = newEntities
+                        }
+
+                        return nluItem
+
+                      })
 
                       // Associa o resultado da NLU aos items de OCR correspondentes
                       console.log('Associando NLU Response in OCR Data')
