@@ -60,33 +60,40 @@ function getRuleIDDefinition(dadosSolicitacao, ocrData, authMecan) {
 
 }
 
-let getRulesData = async () => {
+let getRulesData = () => {
 
-  console.log('Populando array de regras')
+  return new Promise((resolve, reject) => {
 
-  let url = 'https://dokia-rules.mybluemix.net/api/field/all'
+    console.log('Populando array de regras')
 
-  // Efetua o download do PDF
-  let requestOptions = {
-    method: 'GET',
-    resolveWithFullResponse: true,
-    uri: url,
-    rejectUnauthorized: false
-  }
+    let url = 'https://dokia-rules.mybluemix.net/api/field/all'
 
-  rp(requestOptions).then((response) => {
+    // Efetua o download do PDF
+    let requestOptions = {
+      method: 'GET',
+      resolveWithFullResponse: true,
+      uri: url,
+      rejectUnauthorized: false
+    }
 
-    ruleDataStorage = eval(response.body)
+    rp(requestOptions).then((response) => {
 
-    // setTimeout(() => {
-    //   getRulesData()
-    // }, TIMEOUT)
+      let temp = eval(response.body)
+      ruleDataStorage = temp
+      resolve(temp)
+
+      // setTimeout(() => {
+      //   getRulesData()
+      // }, TIMEOUT)
+
+    })
 
   })
 
+
 }
 
-await getRulesData()
+// getRulesData()
 
 function processRuleValidator(wksResponse, dadosSolicitacao, ocrData, authMecan) {
 
@@ -706,133 +713,139 @@ function RuleValidator() {
       // console.log(ruleDataStorage)
       // console.log(typeof ruleDataStorage)
 
-      ruleDataStorage.forEach((value, index) => {
+      getRulesData().then((ruleData) => {
 
-        // Recupera os ID de regra referentes aos dados de solicitação
+        ruleData.forEach((value, index) => {
 
-        Object.keys(_dadosSolicitacao).forEach((solicData, solicIndex) => {
+          // Recupera os ID de regra referentes aos dados de solicitação
 
-          // console.log(solicData)
-          // console.log(value.title)
-          // console.log('############################')
+          Object.keys(_dadosSolicitacao).forEach((solicData, solicIndex) => {
 
-          if (String(solicData) == String(value.title)) {
+            // console.log(solicData)
+            // console.log(value.title)
+            // console.log('############################')
 
-            console.log('------------------------------')
-            console.log('achou item')
-            console.log(solicData)
-            console.log(value)
-            console.log('------------------------------')
+            if (String(solicData) == String(value.title)) {
 
-            inputs.push({
-              idField: value._id,
-              value: _dadosSolicitacao[solicData]
-            })
+              console.log('------------------------------')
+              console.log('achou item')
+              console.log(solicData)
+              console.log(value)
+              console.log('------------------------------')
 
-          }
+              inputs.push({
+                idField: value._id,
+                value: _dadosSolicitacao[solicData]
+              })
 
-          // console.log('==========')
-          // console.log(tamDadosSolicitacao)
-          // console.log(solicIndex)
-          // console.log('==========')
+            }
 
-        })
+            // console.log('==========')
+            // console.log(tamDadosSolicitacao)
+            // console.log(solicIndex)
+            // console.log('==========')
 
-        // Recupera os ID de regra referente aos dados da NLU
+          })
 
-        wksResponse.forEach((wksData, wksIndex) => {
+          // Recupera os ID de regra referente aos dados da NLU
 
-          if (wksData != undefined) {
+          wksResponse.forEach((wksData, wksIndex) => {
 
-            let entities = wksData.entities
+            if (wksData != undefined) {
 
-            if (entities) {
+              let entities = wksData.entities
 
-              const [dbItem] = entities.filter(({ type }) => type === value.title)
+              if (entities) {
 
-              if (dbItem) {
-                const text = dbItem.text;
+                const [dbItem] = entities.filter(({ type }) => type === value.title)
 
-                inputs.push({
-                  idField: value._id,
-                  value: text
-                })
+                if (dbItem) {
+                  const text = dbItem.text;
+
+                  inputs.push({
+                    idField: value._id,
+                    value: text
+                  })
+
+                }
 
               }
 
             }
 
+            // console.log('==========')
+            // console.log(tamWks)
+            // console.log(wksIndex)
+            // console.log('==========')
+
+          })
+
+
+          if (authMecan == true) {
+
+            if (value.title == 'autenticacao_mecanica') {
+              inputs.push({
+                idField: value._id,
+                value: ""
+              })
+            }
           }
 
-          // console.log('==========')
-          // console.log(tamWks)
-          // console.log(wksIndex)
-          // console.log('==========')
+        })
+
+        console.log('Enviando dados para Validação de Regras ...')
+
+        // Recupera o ID da regra
+        let rule = getRuleIDDefinition(_dadosSolicitacao, ocrData, authMecan)
+
+        const data = {
+          idRule: rule.id,
+          inputs: inputs
+        }
+
+        console.log('Parametros do EndPoint de Validacao de Regras!')
+        console.log(data)
+        console.log('****************')
+
+        // Envia os dados para o EndPoint de Validação de Regras
+        let requestOptions = {
+          method: 'POST',
+          uri: VALIDATOR_URL,
+          resolveWithFullResponse: true,
+          body: data,
+          json: true
+        }
+
+        rp(requestOptions).then((response) => {
+
+          console.log('response ruleValidator')
+          console.log(response.body)
+
+          let resp = {
+            validationData: response.body,
+            ruleName: rule.ruleName,
+            wksResponse,
+            dadosSolicitacao,
+            ocrData,
+            authMecan
+          }
+
+          resolve(resp)
+
+        }).catch((error) => {
+
+          console.log('==============================================')
+          console.log('Erro na requisicao da validacao de regras')
+          console.log(error.response.status)
+          console.log(error)
+          console.log('==============================================')
+          resolve()
 
         })
 
 
-        if (authMecan == true) {
-
-          if (value.title == 'autenticacao_mecanica') {
-            inputs.push({
-              idField: value._id,
-              value: ""
-            })
-          }
-        }
-
       })
 
-      console.log('Enviando dados para Validação de Regras ...')
-
-      // Recupera o ID da regra
-      let rule = getRuleIDDefinition(_dadosSolicitacao, ocrData, authMecan)
-
-      const data = {
-        idRule: rule.id,
-        inputs: inputs
-      }
-
-      console.log('Parametros do EndPoint de Validacao de Regras!')
-      console.log(data)
-      console.log('****************')
-
-      // Envia os dados para o EndPoint de Validação de Regras
-      let requestOptions = {
-        method: 'POST',
-        uri: VALIDATOR_URL,
-        resolveWithFullResponse: true,
-        body: data,
-        json: true
-      }
-
-      rp(requestOptions).then((response) => {
-
-        console.log('response ruleValidator')
-        console.log(response.body)
-
-        let resp = {
-          validationData: response.body,
-          ruleName: rule.ruleName,
-          wksResponse,
-          dadosSolicitacao,
-          ocrData,
-          authMecan
-        }
-
-        resolve(resp)
-
-      }).catch((error) => {
-
-        console.log('==============================================')
-        console.log('Erro na requisicao da validacao de regras')
-        console.log(error.response.status)
-        console.log(error)
-        console.log('==============================================')
-        resolve()
-
-      })
 
     })
 
