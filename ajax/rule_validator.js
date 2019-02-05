@@ -60,7 +60,7 @@ function getRuleIDDefinition(dadosSolicitacao, ocrData, authMecan) {
 
 }
 
-async function getRulesData() {
+let getRulesData = async () => {
 
   console.log('Populando array de regras')
 
