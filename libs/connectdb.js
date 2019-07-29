@@ -30,9 +30,6 @@ module.exports = function(){
 
                 resolve(dbInstance)
 
-            
-            //   client.close();
-
                 // TESTE
                 // const collection = db.collection('organizations')
 
