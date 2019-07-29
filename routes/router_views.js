@@ -935,10 +935,9 @@ module.exports = function(app) {
         console.log('Iniciando extração de texto do PDF')
 
         // Efetua o processamento OCR diretamente do PDF no Storage
-        m_gCloudVision.gCloudTextOCRFromPDF(_uuid, pdfBaseName).then((result) => {
+        m_gCloudVision.gCloudTextOCRFromPDFV2(_uuid, pdfBaseName).then((result) => {
 
           console.log('Google Cloud Vision PDF Extraction Success!')
-          console.log(result)
 
           if(result.ocr.length == 0){
 
@@ -952,6 +951,8 @@ module.exports = function(app) {
 
             // Prepara a execução do OCR Parser para analisar os textos
             let promisesOcrParser = reqWKS.ocr.map((ocrItem, ocrIndex) => {
+              if(ocrItem.ocrData == null) return null
+              
               if(ocrItem.ocrData.length > 0){
                 return m_ocrParser.ocrParser(ocrItem)
               }
@@ -1369,7 +1370,8 @@ module.exports = function(app) {
         m_gCloudVision.gCloudTextOCRFromPDF(_uuid, pdfBaseName).then((result) => {
 
           console.log('Google Cloud Vision PDF Extraction Success!')
-          // console.log(result)
+          // console.log(JSON.stringify(result))
+          // process.exit()
 
           if(result.ocr.length == 0){
 
@@ -1377,8 +1379,6 @@ module.exports = function(app) {
 
           }
           else{
-
-            reqWKS.ocr = result.ocr
 
             // Prepara a execução do OCR Parser para analisar os textos
             let promisesOcrParser = reqWKS.ocr.map((ocrItem, ocrIndex) => {

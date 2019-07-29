@@ -13,9 +13,10 @@ module.exports = function(){
 
             const MongoClient = require('mongodb').MongoClient
 
-            const url = process.env.MONGODB_URI ||'mongodb://heroku_7gq7kskf:h87b2kq3n2oj5ffoin790mrrf3@ds125068.mlab.com:25068/heroku_7gq7kskf'
+            // const url = process.env.MONGODB_URI ||'mongodb://heroku_7gq7kskf:h87b2kq3n2oj5ffoin790mrrf3@ds125068.mlab.com:25068/heroku_7gq7kskf'
+            const url = 'mongodb+srv://dokiauser:wizard10@cluster0-nmqvg.mongodb.net/test?retryWrites=true&w=majority'
 
-            const dbName = 'heroku_7gq7kskf'    
+            const dbName = 'test'    
 
             MongoClient.connect(url, function(err, client) {
             

@@ -9,7 +9,7 @@
   "dependencies": {
     "@cloudant/cloudant": "^2.3.0",
     "@google-cloud/storage": "^1.7.0",
-    "@google-cloud/vision": "^0.20.0",
+    "@google-cloud/vision": "^0.25.0",
     "async": "^2.6.1",
     "aws-sdk": "^2.188.0",
     "axios": "^0.18.0",

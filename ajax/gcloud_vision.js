@@ -3,19 +3,24 @@ let path = require('path')
 var rp = require('request-promise').defaults({simple : false})
 let GoogleCloudStorage = require('@google-cloud/storage');
 
+const fs = require('fs');
+const {promisify} = require('util');
+const readFileAsync = promisify(fs.readFile);
+const writeFileAsync = promisify(fs.writeFile)
+
+const fileName = './ajax/teste123.pdf';
+
 const PROJECT_ID = 'teste-206416';
 
 process.env.GOOGLE_APPLICATION_CREDENTIALS = './keys/key_gcloud_vision.json'
 
-// Imports the Google Cloud client library
-const vision = require('@google-cloud/vision');
-
-// PLANO B Mother Fucker
+const {ImageAnnotatorClient} = require('@google-cloud/vision').v1p4beta1;
+const BUCKET_NAME = 'dokia-storage'
 
 function gCloudTextOCR(imageFullPath, index, callback){
     
     // Creates a client
-    const client = new vision.ImageAnnotatorClient();
+    const client = new ImageAnnotatorClient();
 
     // Performs label detection on the image file
     client.documentTextDetection(imageFullPath).then(results => {
@@ -37,22 +42,6 @@ function gCloudTextOCR(imageFullPath, index, callback){
     });
 
 }
-
-// ### PLANO C ULTRA MEGA BLASTER ###
-
-
-/* 
-    Em 6 de abril de 2018 , o suporte para arquivos PDF e TIFF na detecção de texto do documento foi adicionado à API do Google Cloud Vision (consulte as Notas da versão ).
-
-    Segundo a documentação:
-
-    A API do Vision pode detectar e transcrever texto de arquivos PDF e TIFF armazenados no Google Cloud Storage.
-
-    A detecção de texto do documento em PDF e TIFF deve ser solicitada usando a função asyncBatchAnnotate , que executa uma solicitação assíncrona e fornece seu status usando os recursos de operações.
-
-    A saída de uma solicitação de PDF / TIFF é gravada em um arquivo JSON criado no intervalo especificado do Google Cloud Storage.
-
-*/
 
 function gCloudTextOCRFromPDF(uuid, pdfBaseName){
 
@@ -84,7 +73,7 @@ function gCloudTextOCRFromPDF(uuid, pdfBaseName){
             mimeType: 'application/pdf',
             gcsSource: {
                 uri: gcsSourceUri,
-            }
+            },
         }
         const outputConfig = {
             gcsDestination: {
@@ -180,6 +169,8 @@ function gCloudTextOCRFromPDF(uuid, pdfBaseName){
                                     
                                 })
 
+                                console.log(ocr)
+
                                 resolve({
                                    fileName: file.name,
                                    url: urls[0],
@@ -207,6 +198,61 @@ function gCloudTextOCRFromPDF(uuid, pdfBaseName){
 
 }
 
+async function gCloudTextOCRFromPDFV2(uuid, pdfBaseName){
+
+    let fileNameDest = path.basename(pdfBaseName)
+
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = './keys/key_gcloud_vision.json'
+
+    // Creates a client
+    const client = new ImageAnnotatorClient();
+
+    const fileName = `uploads/${uuid}/${pdfBaseName}`;
+
+    const request = {
+        requests: [
+            {
+                inputConfig: {
+                    mimeType: 'application/pdf',
+                    content: await readFileAsync(fileName)
+                },
+                features: [{
+                    type: 'TEXT_DETECTION',
+                }],
+                "imageContext": {
+                    // "languageHints": ['sr']
+                }
+            },
+        ],
+    };
+    
+    const results = await client.batchAnnotateFiles(request)
+    const _responses = results[0].responses[0]
+
+    const ocr = _responses.responses.map(response => {
+
+        const fullTextAnnotation = response.fullTextAnnotation;
+        const context = response.context
+
+        let ocrData = fullTextAnnotation == null ? null : fullTextAnnotation.text
+        let resPageIndex = context == null ? null : context.pageNumber
+        
+        return {
+            ocrData, 
+            resPageIndex
+        }
+
+    })
+
+    return {
+        ocr,
+        jsonObj: _responses
+    }
+
+}
+
 module.exports = {
-    gCloudTextOCR, gCloudTextOCRFromPDF
+    gCloudTextOCR, 
+    gCloudTextOCRFromPDF,
+    gCloudTextOCRFromPDFV2
 }
