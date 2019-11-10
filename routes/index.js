@@ -13,6 +13,7 @@ let m_Rules = require('../rules')
 let areas = [
   {
     area: 'empresarial', 
+    label: '',
     subAreas: [
       'ALIENAÇÃO FIDUCIÁRIA',
       'ARRENDAMENTO MERCANTIL',
@@ -25,6 +26,7 @@ let areas = [
   },
   {
     area: 'civil',
+    label: 'Direito Civil',
     subAreas: [
       'ALIMENTOS',
       'BEM DE FAMÍLIA',
@@ -33,17 +35,65 @@ let areas = [
       'CONTRATO DE COMPRA E VENDA',
       'CONTRATO DE LOCAÇÃO',
       'CONTRATO DE SEGURO',
-      'CONTRATOS',
       'DIREITO DAS SUCESSÕES',
       'DIREITOS AUTORAIS',
       'DIREITOS DA PERSONALIDADE',
       'DIREITOS REAIS',
       'FAMÍLIA',
       'POSSE',
-      'PREVIDÊNCIA PRIVADA'
+      'PREVIDÊNCIA PRIVADA',
+      'DPVAT'
     ]
   }
 ]
+
+function days_between(date1, date2) {
+
+  // The number of milliseconds in one day
+  const ONE_DAY = 1000 * 60 * 60 * 24;
+
+  // Calculate the difference in milliseconds
+  const differenceMs = Math.abs(date1 - date2);
+
+  // Convert back to days and return
+  return Math.round(differenceMs / ONE_DAY);
+
+}
+
+function findDates(document){
+
+  let res = document.match(/\d{2}([\/.-])\d{2}\1\d{4}/g);
+
+  function sortDates(a, b)
+  {
+      return a.getTime() - b.getTime();
+  }
+
+  var dates = [];
+
+  let datesFormatAmerican = res.map(date => {
+    let _date = date.split('/').reverse().join('/')
+    return new Date(_date)
+  })
+
+  var sorted = datesFormatAmerican.sort(sortDates);
+  var minDate = sorted[0];
+  var maxDate = sorted[sorted.length-1];
+
+  let days = days_between(minDate, maxDate)
+
+  minDate = minDate.getDate() + "/" + (parseInt(minDate.getMonth()) + 1) + "/" + minDate.getFullYear()
+  maxDate = maxDate.getDate() + "/" + (parseInt(maxDate.getMonth()) + 1) + "/" + maxDate.getFullYear()
+
+  console.log(days)
+  console.log(minDate)
+  console.log(maxDate)
+
+  return {
+    days, minDate, maxDate
+  }
+
+}
 
 function getArticle(document){
 
@@ -105,8 +155,10 @@ function getAreaAndSubAreas(document){
 
     if(!founded && subAreaFounded.length > 0){
       founded = true
-      areaFound = areaItem.area.toLowerCase()
+      // areaFound = areaItem.area.toLowerCase()
+      areaFound = areaItem.label
       subAreaFound = subAreaFounded[0].toLowerCase()
+      
     }
 
   })
@@ -380,7 +432,11 @@ module.exports = function(app) {
                   // }
 
                   let newJSON = JSON.parse(contents)
-                  newJSON.text = newJSON.conjuntoPalavras
+                  
+                  // newJSON.areaAtuacao = areaAtuacao
+                  // newJSON.subArea = subArea
+                  // newJSON.leis = leis
+                  // newJSON.conjuntoPalavras = conjuntoPalavras
 
                   arrayDocs.push(newJSON)
   
@@ -398,12 +454,27 @@ module.exports = function(app) {
 
       }
 
-      // console.log(arrayFS)
+      console.log(arrayFS)
   
       Promise.all(arrayFS).then(function(){
   
         console.log('Promise All Finished')
-        res.status(200).send({areaAtuacao, subArea, leis, conjuntoPalavras})
+
+        // console.log(arrayDocs)
+
+        m_Rules(arrayDocs, areaAtuacao, subArea, leis, conjuntoPalavras).then(response => {
+          console.log("####")
+          console.log(JSON.stringify(response));
+          console.log("####")
+          console.log("PROCESS RULES FINISHED!")
+
+          res.status(200).send(response)
+
+        }, err => {
+          console.log(err);
+        })
+
+        // res.status(200).send({areaAtuacao, subArea, leis, conjuntoPalavras})
   
       })
 
@@ -422,10 +493,10 @@ module.exports = function(app) {
 //             leiAplicada: "",
 //             numeroArtigo: ""
 //         }],
-//         porcentagemSucumbencia: 20,
-//         diasTramiteProcessual: 50,
-//         tempoAdvocacia: 10,
-//         jurisprudenciaAtual: false,
+        // porcentagemSucumbencia: 20,
+        // diasTramiteProcessual: 50,
+        // tempoAdvocacia: 10,
+        // jurisprudenciaAtual: false,
 //         text: `AGRAVO INTERNO NO RECURSO ESPECIAL. EXECUÇÃO DE ALIMENTOS. EXTINÇÃO DO PROCESSO POR ABANDONO. PARTE AUTORA QUE, MESMO INSTADA A SE MANIFESTAR, PERMANECEU INERTE. INTIMAÇÃO PELOS CORREIOS E OFICIAL DE JUSTIÇA INFRUTÍFERA. DEVER DAS PARTES DE MANTER ATUALIZADO O ENDEREÇO INFORMADO NA PETIÇÃO INICIAL. EXTINÇÃO DO FEITO QUE SE IMPUNHA. CONSONÂNCIA COM A JURISPRUDÊNCIA DESTA CORTE. SÚMULA 83/STJ. AGRAVO INTERNO IMPROVIDO. 1. É dever da parte e do seu advogado manter atualizado o endereço onde receberão intimações (art. 77, V, do CPC/2015), sendo considerada válida a intimação dirigida ao endereçamento declinado na petição inicial, mesmo que não recebida pessoalmente pelo interessado a correspondência, se houver alteração temporária ou definitiva nessa localização (art. 274, parágrafo único, do CPC/2015). 2. No caso, a intimação pessoal da exequente foi inviabilizada por falta do endereço correto, motivo pelo qual foi extinto o processo sem resolução de mérito. 3. Agravo interno improvido.`
 //     },
 //     {
@@ -635,24 +706,48 @@ module.exports = function(app) {
           }
           else{
 
-            const ocrData = result.ocr[0].ocrData
+            // const ocrData = result.ocr[0].ocrData
 
+            let ocrData = ''
+
+            result.ocr.forEach((ocrDataItem, ocrDataIndex) => {
+              ocrData += ocrDataItem.ocrData
+            })
+
+            
+            // const newObj = {
+            //   areaAtuacao: areas.area,
+            //   SubArea: areas.subArea,
+            //   leis: articles.map(article => {
+            //     return {
+            //         leiAplicada: '',
+            //         numeroArtigo: article
+            //       }
+            //     }),
+            //   }
+                  
             const areas = getAreaAndSubAreas(ocrData)
             const articles = getArticle(ocrData)
+            const dates = findDates(ocrData)
 
             const newObj = {
               areaAtuacao: areas.area,
-              SubArea: areas.subArea,
+              subArea: areas.subArea,
               leis: articles.map(article => {
                 return {
-                  leiAplicada: '',
-                  numeroArtigo: article
-                }
-              }),
-              conjuntoPalavras: result
+                    leiAplicada: '',
+                    numeroArtigo: article
+                  }
+                }),
+              porcentagemSucumbencia: 0,
+              diasTramiteProcessual: dates.days,
+              tempoAdvocacia: 0,
+              jurisprudenciaAtual: true,
+              text: ocrData
             }
 
             let resultStr = JSON.stringify(newObj);
+            
             let jsonFileName = `./uploads/${_uuid}.json`
 
             fs.writeFileSync(jsonFileName, resultStr);

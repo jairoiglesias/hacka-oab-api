@@ -1,13 +1,13 @@
 let Promise = require('bluebird');
 
-// CLASSIFICADORES
-let areaAtuacao = "";
-let subArea = "";
-let leis = [{
-    leiAplicada: "",
-    numeroArtigo: ""
-}];
-let conjuntoPalavras = ["DIREITO CIVIL", "Seguro DPVAT", "EXTINÇÃO"];
+// // CLASSIFICADORES
+// let areaAtuacao = "";
+// let subArea = "";
+// let leis = [{
+//     leiAplicada: "",
+//     numeroArtigo: ""
+// }];
+// let conjuntoPalavras = ["DIREITO CIVIL", "Seguro DPVAT", "EXTINÇÃO"];
 
 // GRAU QUALIFICADORES
 let grauPorcentagemSucumbencia = "menor"; // maior
@@ -60,11 +60,25 @@ let necessidadeJurisprudenciaAtual = false; // true
 //     }
 // ];
 
-function verifyDocs(arrayDocs) {
+function verifyDocs(paramArrayDocs, paramAreaAtuacao, paramSubArea, paramLeis, paramConjuntoPalavras) {
 
-    return new Promise(function (resolve, reject) {
+    let arrayDocs = paramArrayDocs;
+    let areaAtuacao = paramAreaAtuacao;
+    let subArea =paramSubArea;
+    let leis = paramLeis;
+    let conjuntoPalavras =paramConjuntoPalavras;
+
+    return new Promise( (resolve, reject) => {
+
+        // console.log(arrayDocs)
+        console.log("@@@", areaAtuacao, subArea, leis, conjuntoPalavras)
+        
         let arrayDocScale = [];
+
         for (let doc of arrayDocs) {
+
+            // console.log(doc)
+
             let validadeAreaAtuacao = false;
             let validadeSubArea = false;
             let validadeLeis = false;
@@ -74,6 +88,13 @@ function verifyDocs(arrayDocs) {
             let validadeDiasTramiteProcessual = false;
             let validadeTempoAdvocacia = false;
             let validadeJurisprudenciaAtual = false;
+
+            console.log("@@@@@@@@@@@@@@@")
+            console.log('doc.areaAtuacao', doc.areaAtuacao)
+            console.log('areaAtuacao', areaAtuacao)
+            console.log('doc.subArea', doc.subArea)
+            console.log('subArea', subArea)
+            console.log("@@@@@@@@@@@@@@@")
 
             if (doc.areaAtuacao == areaAtuacao) {
                 validadeAreaAtuacao = true;
@@ -111,7 +132,15 @@ function verifyDocs(arrayDocs) {
                 }
             }
 
+            console.log('=+++++++')
+            console.log(validadeAreaAtuacao)
+            console.log(validadeSubArea)
+            console.log(validadeLeis)
+
+
             if (validadeAreaAtuacao == true && validadeSubArea == true && validadeLeis == true) {
+
+                console.log('hey')
                 if (necessidadeJurisprudenciaAtual == true) {
                     validadeJurisprudenciaAtual = doc.jurisprudenciaAtual;
                 } else {
@@ -132,6 +161,9 @@ function verifyDocs(arrayDocs) {
             if (classifierArray[doc.porcentagemSucumbencia][doc.diasTramiteProcessual][doc.tempoAdvocacia] == undefined) classifierArray[doc.porcentagemSucumbencia][doc.diasTramiteProcessual][doc.tempoAdvocacia] = [];
 
             classifierArray[doc.porcentagemSucumbencia][doc.diasTramiteProcessual][doc.tempoAdvocacia].push(doc);
+
+            console.log(doc)
+            
 
         }
 
@@ -177,6 +209,8 @@ function verifyDocs(arrayDocs) {
 
                     if (request.keywords != undefined) {
                         let keywords = request.keywords;
+
+                        console.log(request.keywords)
 
                         for (let keyword of keywords) {
                             if (keyword.text != undefined) {
