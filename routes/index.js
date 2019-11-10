@@ -344,10 +344,12 @@ module.exports = function(app) {
 
   app.post('/process_batch', (req, res) => {
 
-    let porcentagemSucumbencia = req.body.porcentagemSucumbencia
-    let diasTramiteProcessual = req.body.diasTramiteProcessual
-    let tempoAdvocacia = req.body.tempoAdvocacia
-    let jurisprudenciaAtual = req.body.jurisprudenciaAtual
+    // let porcentagemSucumbencia = req.body.porcentagemSucumbencia
+    // let diasTramiteProcessual = req.body.diasTramiteProcessual
+    // let tempoAdvocacia = req.body.tempoAdvocacia
+    // let jurisprudenciaAtual = req.body.jurisprudenciaAtual
+
+    let {areaAtuacao, subArea, leis, conjuntoPalavras} = req.body
 
     let arrayDocs = []
     let arrayFS = []
@@ -355,8 +357,6 @@ module.exports = function(app) {
     fs.readdir('./uploads/', (err, items) => {
       
       for (var i=0; i<items.length; i++) {
-
-        // console.log(items[i]);
         
         let ext = path.extname(items[i])
         
