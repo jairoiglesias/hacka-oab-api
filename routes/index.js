@@ -1,13 +1,14 @@
 
-var multer = require('multer')
-var uuid = require('uuid')
-var fs = require('fs')
-var path = require('path')
-var url = require('url')
-var rp = require('request-promise').defaults({simple : false})
+let multer = require('multer')
+let uuid = require('uuid')
+let fs = require('fs')
+let path = require('path')
+let url = require('url')
+let rp = require('request-promise').defaults({simple : false})
 
 // Carrega modulos customizados
 let m_ocrParser = require('../ajax/ocr_parser.js')
+let m_Rules = require('../rules')
 
 let areas = [
   {
@@ -341,6 +342,134 @@ module.exports = function(app) {
     res.render('upload_doc')
   })
 
+  app.post('/process_batch', (req, res) => {
+
+    let porcentagemSucumbencia = req.body.porcentagemSucumbencia
+    let diasTramiteProcessual = req.body.diasTramiteProcessual
+    let tempoAdvocacia = req.body.tempoAdvocacia
+    let jurisprudenciaAtual = req.body.jurisprudenciaAtual
+
+    let arrayDocs = []
+    let arrayFS = []
+    
+    fs.readdir('./uploads/', (err, items) => {
+      
+      for (var i=0; i<items.length; i++) {
+
+        // console.log(items[i]);
+        
+        let ext = path.extname(items[i])
+        
+        if(ext == '.json'){
+
+          let jsonFileName = `uploads/${items[i]}`
+
+          let readFileHandler = new Promise((resolve, reject) => {
+              
+              fs.readFile(jsonFileName, 'utf8', (err, contents) => {
+              
+                if(err){
+                  console.log(err)
+                }
+                else{
+                  console.log(contents.length);
+                  // console.log('======================')
+      
+                  // let newJSON = {
+                  //   nome: 'teste'
+                  // }
+
+                  let newJSON = JSON.parse(contents)
+                  newJSON.text = newJSON.conjuntoPalavras
+
+                  arrayDocs.push(newJSON)
+  
+                  resolve()
+
+                }
+    
+              });
+
+            })
+
+          arrayFS.push(readFileHandler)
+        
+        }
+
+      }
+
+      // console.log(arrayFS)
+  
+      Promise.all(arrayFS).then(function(){
+  
+        console.log('Promise All Finished')
+        res.status(200).send({
+          porcentagemSucumbencia,
+          diasTramiteProcessual,
+          tempoAdvocacia,
+          jurisprudenciaAtual
+        })
+  
+      })
+
+
+    })
+
+
+  })
+
+
+    // ARRAY EXEMPLO
+// let arrayDocs = [{
+//         areaAtuacao: "",
+//         subArea: "",
+//         leis: [{
+//             leiAplicada: "",
+//             numeroArtigo: ""
+//         }],
+//         porcentagemSucumbencia: 20,
+//         diasTramiteProcessual: 50,
+//         tempoAdvocacia: 10,
+//         jurisprudenciaAtual: false,
+//         text: `AGRAVO INTERNO NO RECURSO ESPECIAL. EXECUÇÃO DE ALIMENTOS. EXTINÇÃO DO PROCESSO POR ABANDONO. PARTE AUTORA QUE, MESMO INSTADA A SE MANIFESTAR, PERMANECEU INERTE. INTIMAÇÃO PELOS CORREIOS E OFICIAL DE JUSTIÇA INFRUTÍFERA. DEVER DAS PARTES DE MANTER ATUALIZADO O ENDEREÇO INFORMADO NA PETIÇÃO INICIAL. EXTINÇÃO DO FEITO QUE SE IMPUNHA. CONSONÂNCIA COM A JURISPRUDÊNCIA DESTA CORTE. SÚMULA 83/STJ. AGRAVO INTERNO IMPROVIDO. 1. É dever da parte e do seu advogado manter atualizado o endereço onde receberão intimações (art. 77, V, do CPC/2015), sendo considerada válida a intimação dirigida ao endereçamento declinado na petição inicial, mesmo que não recebida pessoalmente pelo interessado a correspondência, se houver alteração temporária ou definitiva nessa localização (art. 274, parágrafo único, do CPC/2015). 2. No caso, a intimação pessoal da exequente foi inviabilizada por falta do endereço correto, motivo pelo qual foi extinto o processo sem resolução de mérito. 3. Agravo interno improvido.`
+//     },
+//     {
+//         areaAtuacao: "",
+//         subArea: "",
+//         leis: [{
+//             leiAplicada: "",
+//             numeroArtigo: ""
+//         }],
+//         porcentagemSucumbencia: 15,
+//         diasTramiteProcessual: 30,
+//         tempoAdvocacia: 2,
+//         jurisprudenciaAtual: false,
+//         text: `Seguro DPVAT / Espécies de Contratos / Obrigações / DIREITO CIVIL Interesse Processual / Extinção do Processo Sem Resolução de Mérito / Formação, Suspensão e Extinção do Processo / DIREITO PROCESSUAL CIVIL E DO TRABALHO DGJUR - SECRETARIA DA 27a CÂMARA CÍVEL`
+//     },
+//     {
+//         link: "",
+//         titulo: "",
+//         areaAtuacao: "",
+//         subArea: "",
+//         leis: [{
+//             leiAplicada: "",
+//             numeroArtigo: ""
+//         }],
+//         porcentagemSucumbencia: 15,
+//         diasTramiteProcessual: 13,
+//         tempoAdvocacia: 5,
+//         jurisprudenciaAtual: false,
+//         text: `Vistos e relatados estes autos em que são partes as acima indicadas, acordam os Ministros da Terceira Turma do Superior Tribunal de Justiça, por unanimidade, negar provimento ao recurso, nos termos do voto do Sr. Ministro Relator. Os Srs. Ministros Nancy Andrighi, Paulo de Tarso Sanseverino, Ricardo Villas Bôas Cueva e Moura Ribeiro votaram com o Sr. Ministro Relator. Presidiu o julgamento o Sr. Ministro Moura Ribeiro`
+//     }
+// ];
+
+    // m_Rules(arrayDocs).then(res => {
+    //     console.log(JSON.stringify(res));
+    // }, err => {
+    //     console.log(err);
+    // })
+
+
   /*
 
     Versão que utiliza processamento de OCR do Google Vision a partir de um arquivo PDF armazenado no Storage
@@ -527,6 +656,11 @@ module.exports = function(app) {
               }),
               conjuntoPalavras: result
             }
+
+            let resultStr = JSON.stringify(newObj);
+            let jsonFileName = `./uploads/${_uuid}.json`
+
+            fs.writeFileSync(jsonFileName, resultStr);
 
             res.status(200).send(newObj)
 
