@@ -177,11 +177,11 @@ function verifyDocs(paramArrayDocs, paramAreaAtuacao, paramSubArea, paramLeis, p
                 for (let tempoAdvocacia of Object.keys(classifierArray[porcentagemSucumbencia][diasTramiteProcessual])) {
 
                     for (let doc of classifierArray[porcentagemSucumbencia][diasTramiteProcessual][tempoAdvocacia]) {
-                        if (arrayRequest.length < 2) {
+                        if (arrayRequest.length < 1) {
                             doc.priority = "HIGH";
-                        } else if (arrayRequest.length >= 2 && arrayRequest.length < 10) {
+                        } else if (arrayRequest.length >= 1 && arrayRequest.length < 4) {
                             doc.priority = "MEDIUM";
-                        } else if (arrayRequest.length > 10) {
+                        } else if (arrayRequest.length > 4) {
                             doc.priority = "LOW";
                         }
 
