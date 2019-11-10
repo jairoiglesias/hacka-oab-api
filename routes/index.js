@@ -403,12 +403,7 @@ module.exports = function(app) {
       Promise.all(arrayFS).then(function(){
   
         console.log('Promise All Finished')
-        res.status(200).send({
-          porcentagemSucumbencia,
-          diasTramiteProcessual,
-          tempoAdvocacia,
-          jurisprudenciaAtual
-        })
+        res.status(200).send({areaAtuacao, subArea, leis, conjuntoPalavras})
   
       })
 
