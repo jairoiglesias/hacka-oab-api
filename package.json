@@ -18,7 +18,7 @@
     "cheerio": "^1.0.0-rc.2",
     "cookie-parser": "~1.4.3",
     "debug": "~2.2.0",
-    "express": "^4.14.1",
+    "express": "^4.17.3",
     "express-load": "*",
     "express-session": "*",
     "ip": "^1.1.5",
